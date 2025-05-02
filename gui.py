@@ -53,9 +53,6 @@ class CarApp:
         self.search_trans = ttk.Combobox(link_frame, values=["", "Автоматична", "Механічна", "Напівавтоматична"], state="readonly")
         self.search_trans.grid(row=1, column=5, padx=5)
 
-        tk.Label(link_frame, text="Привід:").grid(row=1, column=6, padx=15, pady=4, sticky="e")
-        self.search_drive = ttk.Combobox(link_frame, values=["", "Передній", "Задній", "Повний"], state="readonly")
-        self.search_drive.grid(row=1, column=7, padx=5)
         tk.Label(link_frame, text="Країна:").grid(row=2, column=4, padx=15, pady=4, sticky="e")
         self.search_country = ttk.Combobox(link_frame, values=[""] + ['Німеччина', 'Австрія', 'Бельгія', 'Іспанія', 'Франція', 'Італія', 'Люксембург', 'Нідерланди'], state="readonly")
         self.search_country.grid(row=2, column=5, padx=5)
@@ -66,7 +63,19 @@ class CarApp:
         self.search_price.grid(row=2, column=1, padx=5)
 
         btn_parse_params = tk.Button(link_frame, text="Знайти і спарсити", command=self.search_and_parse_autoscout)
+        self.btn_parse_params = btn_parse_params
         btn_parse_params.grid(row=3, column=0, columnspan=8, pady=8)
+
+        # Підключення перевірки для ввімкнення кнопки
+        for widget in [
+            self.search_brand, self.search_model, self.search_year, self.search_mileage,
+            self.search_fuel, self.search_body, self.search_trans,
+            self.search_price, self.search_country
+        ]:
+            widget.bind("<KeyRelease>", lambda e: self.check_parse_button_state())
+            widget.bind("<<ComboboxSelected>>", lambda e: self.check_parse_button_state())
+        self.check_parse_button_state()
+
 
         # ===== FILTER TABLE =====
         filter_frame = tk.Frame(self.root)
@@ -182,7 +191,7 @@ class CarApp:
                 break
 
         fuel_map = {
-            "Бензин": "P", "Дизель": "D", "Електро": "E",
+            "Бензин": "ft_gasoline", "Дизель": "D", "Електро": "E",
             "Гібрид": "H", "Газ": "L"
         }
         body_map = {
@@ -199,7 +208,6 @@ class CarApp:
         fuel = fuel_map.get(self.search_fuel.get().strip(), None)
         body = body_map.get(self.search_body.get().strip(), None)
         transmission = trans_map.get(self.search_trans.get().strip(), None)
-        drive = drive_map.get(self.search_drive.get().strip(), None)
 
         country_name = self.search_country.get().strip()
         country_code = {'Німеччина': 'D', 'Австрія': 'A', 'Бельгія': 'B', 'Іспанія': 'E', 'Франція': 'F', 'Італія': 'I', 'Люксембург': 'L', 'Нідерланди': 'NL'}.get(country_name, None)
@@ -213,7 +221,6 @@ class CarApp:
             body=body or None,
             priceto=priceto or None,
             transmission=transmission,
-            drive=drive,
             country_code=country_code
         )
         messagebox.showinfo("Парсинг завершено", "Автомобілі за параметрами збережено.")
@@ -230,3 +237,21 @@ class CarApp:
                     import webbrowser
                     webbrowser.open(link)
 
+
+
+    def check_parse_button_state(self):
+        fields = [
+            self.search_brand.get().strip(),
+            self.search_model.get().strip(),
+            self.search_year.get().strip(),
+            self.search_mileage.get().strip(),
+            self.search_fuel.get().strip(),
+            self.search_body.get().strip(),
+            self.search_trans.get().strip(),
+            self.search_price.get().strip(),
+            self.search_country.get().strip(),
+        ]
+        if any(fields):
+            self.btn_parse_params.config(state="normal")
+        else:
+            self.btn_parse_params.config(state="disabled")

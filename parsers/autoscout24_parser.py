@@ -1,25 +1,11 @@
 
 import requests
 from bs4 import BeautifulSoup
+import json
 from database.db_manager import save_car_to_db
 from customs import calculate_customs
 
 BASE_URL = "https://www.autoscout24.com"
-
-# Мапи кодів AutoScout24
-FUEL_CODES = {
-    "petrol": "P", "diesel": "D", "electric": "E", "electric/gasoline": "H", "lpg": "L"
-}
-BODY_CODES = {
-    "sedan": "1", "hatchback": "2", "coupe": "3", "suv": "6", "convertible": "5", "wagon": "7",
-    "van": "8", "pickup": "10"
-}
-TRANSMISSION_CODES = {
-    "automatic": "A", "manual": "M", "semiautomatic": "S"
-}
-DRIVE_CODES = {
-    "fwd": "fwd", "rwd": "rwd", "awd": "awd", "4wd": "4wd"
-}
 
 def safe_int(value):
     try:
@@ -27,9 +13,27 @@ def safe_int(value):
     except:
         return None
 
+def safe_float(value):
+    try:
+        return float(value)
+    except:
+        return None
+
+def get_details_from_json_script(soup):
+    script_tag = soup.find("script", type="application/ld+json")
+    if not script_tag:
+        return None
+    try:
+        data = json.loads(script_tag.string)
+        return data
+    except Exception as e:
+        print("[ERROR] JSON parsing failed:", e)
+        return None
+
 def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                       mileage=None, fuel=None, body=None, priceto=None,
-                      countries=None, transmission=None, drive=None, country_code=None):
+                      transmission=None, drive=None, country_code=None):
+
     params = {
         "sort": "standard",
         "desc": "0",
@@ -46,21 +50,18 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
         params["fregto"] = year_to
     if mileage:
         params["kmto"] = mileage
-    if fuel and fuel in FUEL_CODES:
-        params["fuel"] = FUEL_CODES[fuel]
-    if body and body in BODY_CODES:
-        params["body"] = BODY_CODES[body]
+    if fuel:
+        params["fuel"] = fuel
+    if body:
+        params["body"] = body
     if priceto:
         params["priceto"] = priceto
+    if transmission:
+        params["transmission"] = transmission
+    if drive:
+        params["drive"] = drive
     if country_code:
         params["cy"] = country_code
-    elif country_code:
-        params["cy"] = country_code
-    if transmission and transmission in TRANSMISSION_CODES:
-        params["gear"] = TRANSMISSION_CODES[transmission]
-        params["transmission"] = transmission
-    if drive and drive in DRIVE_CODES:
-        params["drive"] = DRIVE_CODES[drive]
 
     path = "/lst"
     if brand:
@@ -70,102 +71,79 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
 
     page = 1
     while True:
+        if page > 2:
+            break
+
         params["page"] = str(page)
         query = "&".join([f"{k}={v}" for k, v in params.items()])
         url = BASE_URL + path + "?" + query
-
-        print(f"[INFO] Парсинг сторінки {page}: {url}")
+        print(f"[INFO] Parsing page {page}: {url}")
 
         response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
         soup = BeautifulSoup(response.text, "html.parser")
-
-        car_elements = soup.find_all("article", class_="cldt-summary-full-item")
+        car_elements = soup.find_all("article", class_="cldt-summary-full-item", attrs={"data-source": "listpage_search-results"})
         if not car_elements:
-            print("[INFO] Більше сторінок немає. Завершено.")
+            print("[INFO] No more listings or no results.")
             break
-
-        print(f"[INFO] Знайдено {len(car_elements)} авто на сторінці {page}")
 
         for car in car_elements:
             try:
-                title_link = car.select_one('a[href^="/offers"]')
-                if not title_link:
+                link_tag = car.select_one('a[href^="/offers"]')
+                if not link_tag:
                     continue
-                spans = title_link.find_all("span")
-                if len(spans) < 2:
+                detail_url = BASE_URL + link_tag["href"]
+
+                detail_resp = requests.get(detail_url, headers={"User-Agent": "Mozilla/5.0"})
+                detail_soup = BeautifulSoup(detail_resp.text, "html.parser")
+                json_data = get_details_from_json_script(detail_soup)
+                if not json_data or "offers" not in json_data:
                     continue
-                brand_text = spans[0].get_text(strip=True)
-                model_text = spans[1].get_text(strip=True)
-                if len(spans) > 2:
-                    version = spans[2].get_text(strip=True)
-                    model_text += f" {version}"
 
-                price_tag = car.select_one('[data-testid="regular-price"]')
-                if not price_tag:
+                offer = json_data.get("offers")
+                item = offer.get("itemOffered", {})
+
+                identifier_val = item.get("identifier")
+                brand_val = item.get("manufacturer")
+                model_val = item.get("model")
+                year_val = safe_int(item.get("productionDate", "").split("-")[0])
+                mileage_val = safe_int(item.get("mileageFromOdometer", {}).get("value"))
+                fuel_val = item.get("vehicleEngine", [{}])[0].get("fuelType")
+                price_val = safe_float(offer.get("price"))
+                transmission_val = item.get("vehicleTransmission")
+                drive_val = item.get("driveWheelConfiguration")
+                engine_volume = safe_float(item.get("vehicleEngine", [{}])[0].get("engineDisplacement", {}).get("value"))
+                country_val = offer.get("offeredBy", {}).get("address", {}).get("addressCountry")
+                body_val = item.get("bodyType")
+
+                if not (brand_val and model_val and year_val and price_val):
                     continue
-                price_str = price_tag.get_text(strip=True).replace("€", "").replace(",", "").strip()
-                price = float(price_str)
 
-                link = BASE_URL + title_link["href"]
-
-                year = None
-                mileage_val = None
-                engine_type = None
-                transmission_val = None
-
-                details = car.select('[data-testid^="VehicleDetails-"]')
-                for d in details:
-                    text = d.get_text(strip=True)
-                    dt = d["data-testid"]
-                    if dt == "VehicleDetails-mileage_road":
-                        clean = text.replace("km", "").replace(",", "").strip()
-                        mileage_val = safe_int(clean)
-                    elif dt == "VehicleDetails-calendar":
-                        parts = text.split("/")
-                        if len(parts) == 2:
-                            year = safe_int(parts[1])
-                    elif dt == "VehicleDetails-gas_pump":
-                        engine_type = text.lower()
-                    elif dt == "VehicleDetails-transmission":
-                        transmission_val = text.lower()
-
-                if year is None:
-                    year = 2016
-                if mileage_val is None:
-                    mileage_val = 120000
-                if engine_type is None:
-                    engine_type = "petrol"
-                if transmission_val is None:
-                    transmission_val = "manual"
-
-                engine_volume = 1.6
-                drive_val = "FWD"
-                country_attr = car.get("data-listing-country", "d")
-                body_type = "sedan"
-
-                customs_uah = calculate_customs(year, engine_volume, engine_type, price)
-                final_price = round(price * 41 + customs_uah, 2)
+                customs_uah = calculate_customs(year_val, engine_volume or 1.6, fuel_val or "petrol", price_val)
+                final_price = round(price_val * 41 + customs_uah, 2)
 
                 car_data = {
-                    "brand": brand_text,
-                    "model": model_text,
-                    "year": year,
-                    "body_type": body_type,
-                    "engine_type": engine_type,
+                    "identifier": identifier_val,
+                    "brand": brand_val,
+                    "model": model_val,
+                    "year": year_val,
+                    "body_type": body_val,
+                    "engine_type": fuel_val,
                     "engine_volume": engine_volume,
                     "transmission": transmission_val,
                     "drive": drive_val,
                     "mileage": mileage_val,
-                    "country": country_attr,
-                    "price": price,
+                    "country": country_val,
+                    "price": price_val,
                     "customs_uah": customs_uah,
                     "final_price_uah": final_price,
-                    "link": link,
+                    "link": detail_url,
                     "source": "AutoScout24"
                 }
 
+                print("[DEBUG] Saving car:", car_data)
                 save_car_to_db(car_data)
+
             except Exception as e:
-                print("[ERROR] Помилка при обробці авто:", e)
+                print("[ERROR] Failed to process listing:", e)
 
         page += 1
