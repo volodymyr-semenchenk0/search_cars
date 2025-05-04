@@ -1,5 +1,7 @@
 import mysql.connector
 
+from logger_config import logger
+
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -23,13 +25,13 @@ def save_car_to_db(car_data):
     conn = get_db_connection()
     try:
         if car_exists(conn, car_data["identifier"]):
-            print("[INFO] Авто вже існує в базі:", car_data["brand"], car_data["model"], car_data["year"],
-                  car_data["price"])
+            logger.info(
+                f"Авто вже існує в базі: {car_data["brand"]}, {car_data["model"]}, {car_data["year"]}, {car_data["price"]}")
             return
         cursor = conn.cursor()
 
         insert_query = (
-            "INSERT INTO cars (identifier, brand, model, year, body_type, engine_type, engine_volume, "
+            "INSERT INTO cars (identifier, brand, model, year, body_type, fuel_type, engine_volume, "
             "transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
@@ -40,7 +42,7 @@ def save_car_to_db(car_data):
             car_data.get("model"),
             car_data.get("year"),
             car_data.get("body_type"),
-            car_data.get("engine_type"),
+            car_data.get("fuel_type"),
             car_data.get("engine_volume"),
             car_data.get("transmission"),
             car_data.get("drive"),
@@ -56,7 +58,7 @@ def save_car_to_db(car_data):
         cursor.execute(insert_query, params)
         conn.commit()
     except Exception as e:
-        print("[ERROR] Не вдалося зберегти авто:", e)
+        logger.error(f"Не вдалося зберегти авто: {e}")
     finally:
         conn.close()
 
@@ -65,7 +67,7 @@ def get_all_cars():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT brand, model, year, engine_type, engine_volume, country, price, customs_uah, final_price_uah, link FROM cars")
+        "SELECT brand, model, year, fuel_type, engine_volume, country, price, customs_uah, final_price_uah, link FROM cars")
     cars = cursor.fetchall()
     conn.close()
     return cars
@@ -75,7 +77,7 @@ def get_filtered_cars(brand, max_price, year_from, year_to):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    query = "SELECT brand, model, year, engine_type, engine_volume, country, price, customs_uah, final_price_uah, link FROM cars WHERE 1=1"
+    query = "SELECT brand, model, year, fuel_type, engine_volume, country, price, customs_uah, final_price_uah, link FROM cars WHERE 1=1"
     params = []
 
     if brand:

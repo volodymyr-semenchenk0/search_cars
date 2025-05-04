@@ -3,6 +3,7 @@ from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
+from logger_config import logger
 
 from customs import calculate_customs, get_eur_to_uah_rate
 from database.db_manager import save_car_to_db
@@ -28,7 +29,7 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                       transmission=None, drive=None, country_code=None):
     eur_rate = get_eur_to_uah_rate()
     if eur_rate is None:
-        print("[ERROR] Не вдалося отримати курс євро.")
+        logger.error("Не вдалося отримати курс євро.")
         return
 
     params = {
@@ -73,20 +74,20 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
         params["page"] = str(page)
         query = "&".join([f"{k}={v}" for k, v in params.items()])
         url = BASE_URL + path + "?" + query
-        print(f"[INFO] Parsing page {page}: {url}")
+        logger.info(f"Parsing page {page}: {url}")
 
         try:
             response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
             response.raise_for_status()  # Підніме помилку, якщо код не 2xx
         except requests.RequestException as e:
-            print(f"[ERROR] Не вдалося отримати сторінку {url}: {e}")
+            logger.error(f"Не вдалося отримати сторінку {url}: {e}")
             continue
 
         soup = BeautifulSoup(response.text, "html.parser")
         car_elements = soup.find_all("article", class_="cldt-summary-full-item",
                                      attrs={"data-source": "listpage_search-results"})
         if not car_elements:
-            print("[INFO] No more listings or no results.")
+            logger.error("No more listings or no results.")
             break
 
         for car in car_elements:
@@ -98,9 +99,9 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                 details_resp = requests.get(detail_url, headers={"User-Agent": "Mozilla/5.0"})
                 detail_soup = BeautifulSoup(details_resp.text, "html.parser")
 
-                script_tag = detail_soup.find("script", type="application/json")
+                script_tag = detail_soup.find("script", id="__NEXT_DATA__", type="application/json")
                 if not script_tag:
-                    print("[WARNING] JSON __NEXT_DATA__ не знайдено.")
+                    logger.warning("JSON __NEXT_DATA__ не знайдено.")
                     continue
 
                 try:
@@ -128,7 +129,7 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                     body_val = vehicle.get("bodyType")
 
                 except Exception as e:
-                    print("[ERROR] Неможливо обробити JSON структуру:", e)
+                    logger.error("Неможливо обробити JSON структуру:", e)
                     continue
 
                 customs_uah = calculate_customs(year_val, engine_volume, fuel_val, price_val)
@@ -143,7 +144,7 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                     "model": model_val,
                     "year": year_val,
                     "body_type": body_val,
-                    "engine_type": fuel_val,
+                    "fuel_type": fuel_val,
                     "engine_volume": engine_volume,
                     "transmission": transmission_val,
                     "drive": drive_val,
@@ -156,11 +157,11 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                     "source": "AutoScout24"
                 }
 
-                print("[DEBUG] Збереження авто:", car_data)
+                print("Збереження авто:", car_data)
                 save_car_to_db(car_data)
 
             except Exception as e:
-                print(f"[ERROR] Помилка при обробці авто: {e}")
+                logger.error(f"Помилка при обробці авто: {e}")
 
         page += 1
 
@@ -176,14 +177,14 @@ def parse_production_year(vehicle, detail_soup):
     if not year_val:
         script_tag = detail_soup.find("script", type="application/ld+json")
         if not script_tag:
-            print("[WARN] JSON не знайдено.")
+            logger.warning("JSON не знайдено.")
             return None
 
         try:
             data = json.loads(script_tag.string)
             year_val = data.get("offers", {}).get("itemOffered", {}).get("productionDate")
         except Exception as e:
-            print("[ERROR] Неможливо розпарсити JSON:", e)
+            logger.error("Неможливо розпарсити JSON:", e)
             return None
 
     if not year_val or not isinstance(year_val, str):
@@ -192,5 +193,5 @@ def parse_production_year(vehicle, detail_soup):
     try:
         return datetime.strptime(year_val, "%Y-%m-%d").year
     except ValueError:
-        print("[WARN] Неможливо обробити дату:", year_val)
+        logger.warning("Неможливо обробити дату:", year_val)
         return None
