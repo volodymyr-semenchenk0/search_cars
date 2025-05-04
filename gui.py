@@ -136,7 +136,7 @@ class CarApp:
                     col_name = self.tree["columns"][i]
                     val = car[i]
 
-                    if col_name == "Тип двигуна":
+                    if col_name == "Тип пального":
                         val = ENGINE_TYPES.get(val, val)
                     elif col_name == "Тип кузова":
                         val = BODY_TYPES.get(val, val)

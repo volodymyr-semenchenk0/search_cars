@@ -1,5 +1,5 @@
-
 import mysql.connector
+
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -23,7 +23,8 @@ def save_car_to_db(car_data):
     conn = get_db_connection()
     try:
         if car_exists(conn, car_data["identifier"]):
-            print("[INFO] Авто вже існує в базі:", car_data["brand"], car_data["model"], car_data["year"], car_data["price"])
+            print("[INFO] Авто вже існує в базі:", car_data["brand"], car_data["model"], car_data["year"],
+                  car_data["price"])
             return
         cursor = conn.cursor()
 
@@ -63,10 +64,12 @@ def save_car_to_db(car_data):
 def get_all_cars():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT brand, model, year, engine_type, engine_volume, country, price, customs_uah, final_price_uah, link FROM cars")
+    cursor.execute(
+        "SELECT brand, model, year, engine_type, engine_volume, country, price, customs_uah, final_price_uah, link FROM cars")
     cars = cursor.fetchall()
     conn.close()
     return cars
+
 
 def get_filtered_cars(brand, max_price, year_from, year_to):
     conn = get_db_connection()

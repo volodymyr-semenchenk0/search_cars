@@ -1,40 +1,31 @@
+import json
 from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
-import json
-from database.db_manager import save_car_to_db
+
 from customs import calculate_customs, get_eur_to_uah_rate
+from database.db_manager import save_car_to_db
 
 BASE_URL = "https://www.autoscout24.com"
+
 
 def safe_int(value):
     try:
         return int(value)
-    except:
+    except (ValueError, TypeError):
         return None
+
 
 def safe_float(value):
     try:
         return float(value)
-    except:
-        return None
-
-def get_details_from_json_script(soup):
-    script_tag = soup.find("script", type="application/ld+json")
-    if not script_tag:
-        return None
-    try:
-        data = json.loads(script_tag.string)
-        return data
-    except Exception as e:
-        print("[ERROR] JSON parsing failed:", e)
+    except (ValueError, TypeError):
         return None
 
 def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                       mileage=None, fuel=None, body=None, priceto=None,
                       transmission=None, drive=None, country_code=None):
-
     eur_rate = get_eur_to_uah_rate()
     if eur_rate is None:
         print("[ERROR] Не вдалося отримати курс євро.")
@@ -47,7 +38,6 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
         "size": "20",
         "atype": "C",
         "damaged_listing": "exclude",
-        "powertype": "kw"
     }
 
     if year_from:
@@ -85,9 +75,16 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
         url = BASE_URL + path + "?" + query
         print(f"[INFO] Parsing page {page}: {url}")
 
-        response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+            response.raise_for_status()  # Підніме помилку, якщо код не 2xx
+        except requests.RequestException as e:
+            print(f"[ERROR] Не вдалося отримати сторінку {url}: {e}")
+            continue
+
         soup = BeautifulSoup(response.text, "html.parser")
-        car_elements = soup.find_all("article", class_="cldt-summary-full-item", attrs={"data-source": "listpage_search-results"})
+        car_elements = soup.find_all("article", class_="cldt-summary-full-item",
+                                     attrs={"data-source": "listpage_search-results"})
         if not car_elements:
             print("[INFO] No more listings or no results.")
             break
@@ -106,66 +103,39 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                     print("[WARNING] JSON __NEXT_DATA__ не знайдено.")
                     continue
 
-                next_data = json.loads(script_tag.string)
-                listing = next_data["props"]["pageProps"]["listingDetails"]
-                vehicle = listing.get("vehicle", {})
-
-                identifier_val = listing.get("id")
-                brand_val = vehicle.get("make")
-                model_val = vehicle.get("model")
-                year_val = vehicle.get("firstRegistrationDateRaw")
-                if year_val:
-                    try:
-                        year_val = datetime.strptime(year_val, "%Y-%m-%d").year
-                    except ValueError:
-                        print("[WARN] Неможливо обробити дату:", year_val)
-                mileage_val = safe_int(vehicle.get("mileageInKmRaw"))
-                fuel_val = vehicle.get("fuelCategory", {}).get("formatted")
-                price_val = safe_float(listing.get("prices", {}).get("public", {}).get("priceRaw"))
-                transmission_val = vehicle.get("transmissionType")
-                drive_val = vehicle.get("driveTrain")
-                engine_volume = safe_float(vehicle.get("rawDisplacementInCCM"))
-                country_val = listing.get("location", {}).get("countryCode")
-                body_val = vehicle.get("bodyType")
-
-                script_tag = detail_soup.find("script", type="application/ld+json")
-                if not script_tag:
-                    print("[WARNING] JSON не знайдено.")
-                    continue
-
                 try:
-                    data = json.loads(script_tag.string)
-                    offer = data.get("offers", {})
-                    item = offer.get("itemOffered", {})
+                    next_data = json.loads(script_tag.string)
+                    listing = next_data["props"]["pageProps"]["listingDetails"]
+                    vehicle = listing.get("vehicle", {})
 
-                    identifier_val = item.get("identifier")
-                    brand_val = item.get("manufacturer")
-                    model_val = item.get("model")
+                    identifier_val = listing.get("id")
+                    brand_val = vehicle.get("make")
+                    model_val = vehicle.get("model")
+                    year_val = safe_int(parse_production_year(vehicle, detail_soup))
+                    mileage_val = safe_int(vehicle.get("mileageInKmRaw"))
+                    fuel_val = vehicle.get("fuelCategory", {}).get("formatted")
 
-                    production_date = item.get("productionDate")
-                    if production_date:
-                        try:
-                            year_val = datetime.strptime(production_date, "%Y-%m-%d").year
-                        except ValueError:
-                            print("[WARN] Неможливо обробити productionDate:", production_date)
+                    if fuel_val == "Electric":
+                        engine_volume = safe_float(vehicle.get("rawPowerInKw"))
+                    else:
+                        engine_volume = safe_float(vehicle.get("rawDisplacementInCCM"))
 
-                    mileage_val = safe_int(item.get("mileageFromOdometer", {}).get("value"))
-                    fuel_val = item.get("vehicleEngine", [{}])[0].get("fuelType")
-                    price_val = safe_float(offer.get("price"))
-                    transmission_val = item.get("vehicleTransmission")
-                    drive_val = item.get("driveWheelConfiguration")
-                    engine_volume = safe_float(item.get("vehicleEngine", [{}])[0].get("engineDisplacement", {}).get("value"))
-                    country_val = offer.get("offeredBy", {}).get("address", {}).get("addressCountry")
-                    body_val = item.get("bodyType")
+                    price_val = safe_float(listing.get("prices", {}).get("public", {}).get("priceRaw"))
+                    transmission_val = vehicle.get("transmissionType")
+                    drive_val = vehicle.get("driveTrain")
+
+                    country_val = listing.get("location", {}).get("countryCode")
+                    body_val = vehicle.get("bodyType")
 
                 except Exception as e:
                     print("[ERROR] Неможливо обробити JSON структуру:", e)
                     continue
 
-
-                print(f"{year_val} {engine_volume} {fuel_val} {price_val}")
                 customs_uah = calculate_customs(year_val, engine_volume, fuel_val, price_val)
-                final_price = round(price_val * eur_rate + customs_uah, 2)
+                if customs_uah is not None:
+                    final_price = round(price_val * eur_rate + customs_uah, 2)
+                else:
+                    final_price = None
 
                 car_data = {
                     "identifier": identifier_val,
@@ -193,3 +163,34 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                 print(f"[ERROR] Помилка при обробці авто: {e}")
 
         page += 1
+
+
+def parse_production_year(vehicle, detail_soup):
+    year_val = vehicle.get("productionYear")
+
+    if not year_val:
+        year_val = vehicle.get("firstRegistrationDateRaw")
+    else:
+        return year_val
+
+    if not year_val:
+        script_tag = detail_soup.find("script", type="application/ld+json")
+        if not script_tag:
+            print("[WARN] JSON не знайдено.")
+            return None
+
+        try:
+            data = json.loads(script_tag.string)
+            year_val = data.get("offers", {}).get("itemOffered", {}).get("productionDate")
+        except Exception as e:
+            print("[ERROR] Неможливо розпарсити JSON:", e)
+            return None
+
+    if not year_val or not isinstance(year_val, str):
+        return None
+
+    try:
+        return datetime.strptime(year_val, "%Y-%m-%d").year
+    except ValueError:
+        print("[WARN] Неможливо обробити дату:", year_val)
+        return None
