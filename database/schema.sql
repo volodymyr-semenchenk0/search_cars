@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS cars (
     drive VARCHAR(50),
     mileage INT,
     country VARCHAR(100),
-    price FLOAT,
-    customs_uah FLOAT,
-    final_price_uah FLOAT,
+    price DECIMAL,
+    customs_uah DECIMAL,
+    final_price_uah DECIMAL,
     link TEXT,
     source VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

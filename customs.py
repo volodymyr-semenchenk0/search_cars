@@ -1,47 +1,182 @@
-from typing import Optional
+from datetime import datetime
+from typing import Optional, Dict
 
 import requests
-from datetime import datetime
+
 from logger_config import logger
 
-FALLBACK_RATE = 47
 
+class CalculateCustoms:
+    @staticmethod
+    def _get_eur_to_uah_rate() -> float:
+        try:
+            response = requests.get(
+                "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json"
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return float(data[0]["rate"])
+            else:
+                logger.warning(f"Не вдалося отримати курс євро від НБУ. Статус: {response.status_code}")
+        except Exception as e:
+            logger.warning(f"Помилка при запиті курсу євро: {e}")
+        return 47.0
 
-def get_eur_to_uah_rate():
-    try:
-        response = requests.get("https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json")
-        if response.status_code == 200:
-            data = response.json()
-            return float(data[0]["rate"])
+    @staticmethod
+    def _map_fuel_type(raw: str) -> str:
+
+        s = raw.strip().lower()
+
+        if 'hybrid' in s or 'electric/gasoline' in s or 'electric/diesel' in s:
+            return 'hybrid'
+
+        if 'electric' in s:
+            return 'electric'
+
+        if any(fuel in s for fuel in ['gasoline', 'petrol', 'lpg', 'cng', 'ethanol', 'hydrogen']):
+            return 'petrol'
+
+        if 'diesel' in s:
+            return 'diesel'
+
+        raise ValueError(f"Тип палива '{raw}' не підтримується")
+
+    def __init__(self):
+        self.eur_to_uah_rate = self._get_eur_to_uah_rate()
+        self.living_minimum = 3028
+        self.duty_rate = 0.10
+        self.vat_rate = 0.20
+
+    def _calculate_customs_duty(self, customs_value_uah: float) -> float:
+        return customs_value_uah * self.duty_rate
+
+    @staticmethod
+    def _calculate_excise(
+            engine_volume_cc: float,
+            age_years: int,
+            fuel_type: str,
+            battery_capacity_kwh: Optional[float] = None
+    ) -> float:
+        volume_l = engine_volume_cc / 1000
+        age = age_years
+        ft = fuel_type
+        if ft == "electric":
+            if battery_capacity_kwh is None:
+                raise ValueError("Потрібно вказати battery_capacity_kwh для електрокара")
+            return battery_capacity_kwh * 1.0
+        if ft == "hybrid":
+            base = 100.0
+        elif ft == "petrol":
+            base = 50.0 if volume_l <= 3 else 100.0
+        elif ft == "diesel":
+            base = 75.0 if volume_l <= 3.5 else 150.0
         else:
-            logger.warning(f"Не вдалося отримати курс євро від НБУ. Статус:{response.status_code}")
-            return FALLBACK_RATE
-    except Exception as e:
-        logger.warning(f"Виняток при запиті до НБУ: {e}")
-        return FALLBACK_RATE
+            raise ValueError(f"Невідомий тип палива: {fuel_type}")
+        return base * volume_l * age
 
+    def _calculate_vat(
+            self,
+            customs_value_uah: float,
+            duty_uah: float,
+            excise_uah: float,
+            fuel_type: str
+    ) -> float:
+        if fuel_type.lower() == "electric":
+            return 0.0
+        return (customs_value_uah + duty_uah + excise_uah) * self.vat_rate
 
-def calculate_customs(year: int, engine_volume: float, fuel_type: str, price_eur: float) -> Optional[float] :
-    if year is None or engine_volume is None or fuel_type is None or price_eur is None:
-        logger.warning("Невалідні вхідні дані для розрахунку митних платежів")
-        return None
+    def _calculate_pension_fee(self, customs_value_uah: float) -> float:
+        low = 165 * self.living_minimum
+        med = 290 * self.living_minimum
+        if customs_value_uah <= low:
+            rate = 0.03
+        elif customs_value_uah <= med:
+            rate = 0.04
+        else:
+            rate = 0.05
+        return customs_value_uah * rate
 
-    current_year = datetime.now().year
-    car_age = max(1, current_year - year)
-    rate = get_eur_to_uah_rate()
+    def calculate(
+            self,
+            customs_value_eur: float,
+            engine_volume_cc: float,
+            production_year: int,
+            raw_fuel_type: str,
+            battery_capacity_kwh: Optional[float] = None
+    ) -> Optional[Dict[str, float]]:
+        if customs_value_eur is None or engine_volume_cc is None or production_year is None:
+            return None
 
-    fuel_type = fuel_type.lower()
-    if fuel_type in ['electricity', 'electric', 'bev', 'e']:
-        return 0.0  # Повністю звільнено
+        customs_value_uah = customs_value_eur * self.eur_to_uah_rate
+        current_year = datetime.now().year
+        age_years = max(1, min(current_year - production_year, 15))
+        fuel_type = self._map_fuel_type(raw_fuel_type)
 
-    elif fuel_type in ['diesel', 'd']:
-        base_rate = 75
-    else:
-        base_rate = 50  # Для бензину та інших
+        excise_eur = CalculateCustoms._calculate_excise(
+            engine_volume_cc, age_years, fuel_type, battery_capacity_kwh
+        )
+        excise_uah = excise_eur * self.eur_to_uah_rate
+        duty = self._calculate_customs_duty(customs_value_uah)
+        vat = self._calculate_vat(customs_value_uah, duty, excise_uah, fuel_type)
+        pension = self._calculate_pension_fee(customs_value_uah)
+        total = customs_value_uah + duty + excise_uah + vat + pension
 
-    excise = base_rate * engine_volume * car_age
-    import_duty = 0.1 * (price_eur * rate)
-    vat = 0.2 * ((price_eur * rate) + excise + import_duty)
+        return {
+            "customs_value_uah": round(customs_value_uah, 2),
+            "duty_uah": round(duty, 2),
+            "excise_eur": round(excise_eur, 2),
+            "excise_uah": round(excise_uah, 2),
+            "vat_uah": round(vat, 2),
+            "pension_fee_uah": round(pension, 2),
+            "total_uah": round(total, 2)
+        }
 
-    total = excise + import_duty + vat
-    return round(total, 2)
+# from typing import Optional
+#
+# import requests
+# from datetime import datetime
+# from logger_config import logger
+#
+# FALLBACK_RATE = 47
+# VAT_RATE = 0.2
+# IMPORT_DUTY_RATE = 0.1
+#
+#
+# def get_eur_to_uah_rate():
+#     try:
+#         response = requests.get("https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json")
+#         if response.status_code == 200:
+#             data = response.json()
+#             return float(data[0]["rate"])
+#         else:
+#             logger.warning(f"Не вдалося отримати курс євро від НБУ. Статус:{response.status_code}")
+#             return FALLBACK_RATE
+#     except Exception as e:
+#         logger.warning(f"Виняток при запиті до НБУ: {e}")
+#         return FALLBACK_RATE
+#
+#
+# def calculate_customs(year: int, engine_volume: float, fuel_type: str, price_eur: float) -> Optional[float] :
+#     if fuel_type and fuel_type.lower() in ["electric", "electricity", "bev", "ev"]:
+#         return 0.0
+#
+#     if engine_volume is None or year is None or price_eur is None:
+#         return None
+#
+#     current_year = datetime.now().year
+#     car_age = max(1, current_year - year)
+#     eur_rate = get_eur_to_uah_rate()
+#
+#     if fuel_type and any(ft in fuel_type.lower() for ft in ['hybrid', 'phev', 'hev']):
+#         base_rate = 50
+#     elif fuel_type and "diesel" in fuel_type.lower():
+#         base_rate = 75
+#     else:
+#         base_rate = 50
+#
+#     excise = base_rate * engine_volume * car_age
+#     nds = VAT_RATE * (price_eur * eur_rate + excise)
+#     import_duty = IMPORT_DUTY_RATE * (price_eur * eur_rate)
+#     total = excise + nds + import_duty
+#
+#     return round(total, 2)

@@ -3,10 +3,10 @@ from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
-from logger_config import logger
 
-from customs import calculate_customs, get_eur_to_uah_rate
+from customs import CalculateCustoms
 from database.db_manager import save_car_to_db
+from logger_config import logger
 
 BASE_URL = "https://www.autoscout24.com"
 
@@ -24,14 +24,9 @@ def safe_float(value):
     except (ValueError, TypeError):
         return None
 
-def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
-                      mileage=None, fuel=None, body=None, priceto=None,
-                      transmission=None, drive=None, country_code=None):
-    eur_rate = get_eur_to_uah_rate()
-    if eur_rate is None:
-        logger.error("Не вдалося отримати курс євро.")
-        return
 
+def parse_autoscout24(brand=None, model=None, fregto=None,
+                      kmto=None, cy=None):
     params = {
         "sort": "standard",
         "desc": "0",
@@ -41,24 +36,12 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
         "damaged_listing": "exclude",
     }
 
-    if year_from:
-        params["yearfrom"] = year_from
-    if year_to:
-        params["fregto"] = year_to
-    if mileage:
-        params["kmto"] = mileage
-    if fuel:
-        params["fuel"] = fuel
-    if body:
-        params["body"] = body
-    if priceto:
-        params["priceto"] = priceto
-    if transmission:
-        params["transmission"] = transmission
-    if drive:
-        params["drive"] = drive
-    if country_code:
-        params["cy"] = country_code
+    if fregto:
+        params["fregto"] = fregto
+    if kmto:
+        params["kmto"] = kmto
+    if cy:
+        params["cy"] = cy
 
     path = "/lst"
     if brand:
@@ -117,7 +100,7 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                     fuel_val = vehicle.get("fuelCategory", {}).get("formatted")
 
                     if fuel_val == "Electric":
-                        engine_volume = safe_float(vehicle.get("rawPowerInKw"))
+                        engine_volume = 0
                     else:
                         engine_volume = safe_float(vehicle.get("rawDisplacementInCCM"))
 
@@ -132,11 +115,17 @@ def parse_autoscout24(brand=None, model=None, year_from=None, year_to=None,
                     logger.error("Неможливо обробити JSON структуру:", e)
                     continue
 
-                customs_uah = calculate_customs(year_val, engine_volume, fuel_val, price_val)
-                if customs_uah is not None:
-                    final_price = round(price_val * eur_rate + customs_uah, 2)
-                else:
-                    final_price = None
+                customs_uah, final_price = None, None
+                calc_customs = CalculateCustoms().calculate(
+                    price_val,
+                    engine_volume,
+                    year_val,
+                    fuel_val,
+                    battery_capacity_kwh=89.99,
+                )
+                if calc_customs is not None:
+                    customs_uah = calc_customs.get("customs_value_uah")
+                    final_price = calc_customs.get("total_uah")
 
                 car_data = {
                     "identifier": identifier_val,

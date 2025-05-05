@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 from database.db_manager import get_all_cars, get_filtered_cars
 from parsers.autoscout24_parser import parse_autoscout24
 from parsers.mobile_de_parser import parse_mobile_de
-from common import ENGINE_TYPES, BODY_TYPES, TRANSMISSIONS, DRIVE_TYPES, COUNTRY_NAMES
+from utils import ENGINE_TYPES, BODY_TYPES, TRANSMISSIONS, DRIVE_TYPES, COUNTRY_NAMES
 
 class CarApp:
     def __init__(self, root):
@@ -104,7 +104,7 @@ class CarApp:
         self.sort_checkbox = tk.Checkbutton(filter_frame, text="Останні вгорі", variable=self.sort_newest_first, command=self.refresh_data)
         self.sort_checkbox.pack(side=tk.LEFT, padx=10)
 
-        columns = ("Марка", "Модель",  "Рік", "Тип двигуна", "Обʼєм (л)", "Країна", "Ціна (€)", "Мито (грн)", "Фінальна ціна (грн)", "Посилання")
+        columns = ("Марка", "Модель",  "Рік", "Тип пального", "Обʼєм(л)/Ємність()", "Країна", "Ціна(€)", "Мито(грн)", "Фінальна ціна(грн)", "Посилання")
         self.tree = ttk.Treeview(self.root, columns=columns, show="headings", height=20)
         for col in columns:
             self.tree.heading(col, text=col, command=lambda c=col: self.sort_by_column(c))
@@ -136,6 +136,9 @@ class CarApp:
                     col_name = self.tree["columns"][i]
                     val = car[i]
 
+                    if val is None:
+                        val = "—"
+
                     if col_name == "Тип пального":
                         val = ENGINE_TYPES.get(val, val)
                     elif col_name == "Тип кузова":
@@ -146,6 +149,12 @@ class CarApp:
                         val = DRIVE_TYPES.get(val, val)
                     elif col_name == "Країна":
                         val = COUNTRY_NAMES.get(val, val)
+                    elif col_name == "Обʼєм(л)/Ємність()":
+                        try:
+                            val = float(val) / 1000
+                            val = f"{val:.1f}"
+                        except:
+                            val = "—"
 
                     values.append(val)
                 else:
@@ -173,7 +182,6 @@ class CarApp:
 
     def run_parsers(self):
         parse_autoscout24()
-        parse_mobile_de()
         self.refresh_data()
         messagebox.showinfo("Успішно", "Парсинг завершено та дані оновлено!")
 
