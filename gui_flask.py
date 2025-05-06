@@ -1,12 +1,9 @@
-from datetime import datetime
-
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 
 from carquery_utils import get_all_makes, get_models_for_make
 from database.db_manager import get_all_cars
-from logger_config import logger
 from parsers.autoscout24_parser import AutoScout24Parser
-from utils import ENGINE_TYPES, COUNTRY_NAMES, COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS
+from utils import FUEL_TYPES, COUNTRY_NAMES, COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
 
 app = Flask(__name__)
 
@@ -15,20 +12,26 @@ app = Flask(__name__)
 def index():
     makes = get_all_makes()
 
-    # Виводимо збережені авто з БД
-    columns = ["brand", "model", "year", "fuel_type", "engine_volume", "country", "price", "customs_uah",
-               "final_price_uah", "link"]
-    cars_raw = get_all_cars()
-    cars = [dict(zip(columns, row)) for row in cars_raw]
-    current = datetime.now().year
-    years = list(range(1990, current + 1))[::-1]
+    columns = [
+        'brand', 'model', 'year', 'fuel_type', 'engine_volume',
+        'country', 'price', 'customs_uah', 'final_price_uah', 'link'
+    ]
+    cars = []
+    for row in get_all_cars():
+        car = dict(zip(columns, row))
+        ev = car.get('engine_volume')
+        if ev is not None:
+            car['engine_liters'] = round(float(ev) / 1000, 1)
+        else:
+            car['engine_liters'] = None
+        cars.append(car)
 
     return render_template(
         "index.html",
         makes=makes,
         cars=cars,
-        years=years,
-        engine_types=ENGINE_TYPES,
+        years=get_years_list(),
+        fuel_types=FUEL_TYPES,
         country_names=COUNTRY_NAMES,
         country_codes=COUNTRY_CODES,
         price_options=PRICE_OPTIONS,
@@ -46,10 +49,11 @@ def parse():
         "pricefrom": data.get("pricefrom", "").strip() or None,
         "priceto": data.get("priceto", "").strip() or None,
         "fregfrom": data.get("fregfrom", "").strip() or None,
-        "fregto":  data.get("fregto", "").strip() or None,
+        "fregto": data.get("fregto", "").strip() or None,
         "kmfrom": data.get("kmfrom", "").strip() or None,
         "kmto": data.get("kmto", "").strip() or None,
-        "cy": data.get("cy", "").strip() or None
+        "cy": data.get("cy", "").strip() or None,
+        "fuel": data.get("fuel", "").strip() or None
     }
 
     parser = AutoScout24Parser(**params)

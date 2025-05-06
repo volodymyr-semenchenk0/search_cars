@@ -125,6 +125,19 @@
                 {% endfor %}
             </select>
         </div>
+
+        <div class="col-md-3">
+            <label for="fuel" class="form-label">Тип палива</label>
+            <select id="fuel" name="fuel" class="form-select">
+                <option value="">Усі типи</option>
+                {% for key, obj in fuel_types.items() %}
+                <option value="{{ obj.code }}"> {% if request.form.get('fuel')==obj.code %} selected{% endif %}
+                {{ obj.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
         <!-- Кнопка -->
         <div class="col-md-3 align-self-end">
             <button id="searchBtn" type="submit" class="btn btn-primary w-100" disabled>Пошук на AutoScout24</button>
@@ -140,7 +153,7 @@
             <th>Модель</th>
             <th>Рік</th>
             <th>Тип пального</th>
-            <th>Обʼєм (л)</th>
+            <th>Обʼєм (см3/л)</th>
             <th>Країна</th>
             <th>Ціна, €</th>
             <th>Мито, грн</th>
@@ -154,15 +167,8 @@
             <td>{{ car.brand or '—' }}</td>
             <td>{{ car.model or '—' }}</td>
             <td>{{ car.year or '—' }}</td>
-            <td>{{ engine_types.get(car.fuel_type) or car.fuel_type or '—' }}</td>
-            <td>
-                {% if car.engine_volume %}
-                {% set volume_liters = (car.engine_volume | float) / 1000 %}
-                {{ volume_liters | round(1) }}
-                {% else %}
-                —
-                {% endif %}
-            </td>
+            <td>{{ fuel_types[car.fuel_type.lower()].label }}</td>
+            <td> {{ car.engine_volume }} см³ / {{ car.engine_liters }} л </td>
             <td>{{ country_names.get(car.country) or car.country or '—' }}</td>
             <td>{{ car.price or '—' }}</td>
             <td>{{ car.customs_uah or '—' }}</td>

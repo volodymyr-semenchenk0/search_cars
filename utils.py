@@ -1,3 +1,12 @@
+from datetime import datetime
+
+PARSE_WEBSITES = {
+    "autoscout24": {
+        "url": "https://www.autoscout24.com/"
+    }
+}
+
+
 COUNTRY_NAMES = {
     "DE": "Німеччина",
     "AT": "Австрія",
@@ -22,6 +31,9 @@ MILEAGE_OPTIONS = [
     150000, 175000, 200000
 ]
 
+def get_years_list():
+    return list(range(1988, datetime.now().year + 1))[::-1]
+
 COUNTRY_CODES = {
     "Німеччина": "D",
     "Австрія": "A",
@@ -33,17 +45,44 @@ COUNTRY_CODES = {
     "Нідерланди": "NL"
 }
 
-ENGINE_TYPES = {
-    "Gasoline": "Бензин",
-    "Diesel": "Дизель",
-    "Electric": "Електро",
-    "Electric/Gasoline": "Гібрид",
-    "Electric/Diesel": "Гібрид",
-    "LPG": "Газ",
-    "Ethanol": "Газ (нафтовий газ)",
-    "CNG": "Етанол",
-    "Hydrogen": "Водень",
-    "Others": "Інше"
+
+FUEL_TYPES = {
+    "gasoline": {
+        "label": "Бензин",
+        "code": "B"
+    },
+    "diesel": {
+        "label": "Дизель",
+        "code": "D"
+    },
+    "electric": {
+        "label": "Електро",
+        "code": "E"
+    },
+    "electric/gasoline": {
+        "label": "Електро/Бензин",
+        "code": "2"
+    },
+    "electric/diesel": {
+        "label": "Електро/Дизель",
+        "code": "3"
+    },
+    "lpg": {
+        "label": "Газ",
+        "code": "L"
+    },
+    "ethanol": {
+        "label": "Газ (Етанол)",
+        "code": "M"
+    },
+    "cng": {
+        "label": "Газ (Метанол)",
+        "code": "C"
+    },
+    "hydrogen": {
+        "label": "Водень",
+        "code": "H"
+    }
 }
 
 BODY_TYPES = {
