@@ -13,8 +13,8 @@
 </head>
 <body class="bg-light">
 <div class="container mt-5">
-    <h2 class="mb-4">Система пошуку авто</h2>
-    <form id="searchForm" method="GET" action="/parse-query"" class="row g-3">
+    <h2 class="mb-4">Форма для пошуку авто на закордонних сайтах</h2>
+    <form id="searchForm" method="GET" action="{{ url_for('parse_query') }}" class="row g-3">
 
         <!-- Бренд -->
         <div class="col-md-3">
@@ -46,7 +46,7 @@
                     <option value="">Від</option>
                     {% for p in price_options %}
                     <option value="{{ p }}"> {% if request.form.get('pricefrom') == p|string %} selected{% endif %}
-                    {{ "{:,}".format(p) }} €
+                        {{ "{:,}".format(p) }} €
                     </option>
                     {% endfor %}
                 </select>
@@ -55,7 +55,7 @@
                     <option value="">До</option>
                     {% for p in price_options %}
                     <option value="{{ p }}"> {% if request.form.get('priceto') == p|string %} selected{% endif %}
-                    {{ "{:,}".format(p) }} €
+                        {{ "{:,}".format(p) }} €
                     </option>
                     {% endfor %}
                 </select>
@@ -96,7 +96,7 @@
                     <option value="">Від</option>
                     {% for m in mileage_options %}
                     <option value="{{ m }}"> {% if request.form.get('kmfrom')==m|string %} selected{% endif %}
-                    {{ "{:,}".format(m) }}
+                        {{ "{:,}".format(m) }}
                     </option>
                     {% endfor %}
                 </select>
@@ -106,7 +106,7 @@
                     <option value="">До</option>
                     {% for m in mileage_options %}
                     <option value="{{ m }}"> {% if request.form.get('kmto')==m|string %} selected{% endif %}
-                    {{ "{:,}".format(m) }}
+                        {{ "{:,}".format(m) }}
                     </option>
                     {% endfor %}
                 </select>
@@ -132,68 +132,17 @@
                 <option value="">Усі типи</option>
                 {% for key, obj in fuel_types.items() %}
                 <option value="{{ obj.code }}"> {% if request.form.get('fuel')==obj.code %} selected{% endif %}
-                {{ obj.label }}
+                    {{ obj.label }}
                 </option>
                 {% endfor %}
             </select>
         </div>
-
-        <div class="col-md-3 d-flex align-items-end">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="autoRefresh" name="auto_refresh"
-                       {% if request.args.get('auto_refresh')=='on' %}checked{% endif %}>
-                <label class="form-check-label" for="autoRefresh">
-                    Автооновлення
-                </label>
-            </div>
-        </div>
-
         <!-- Кнопка -->
         <div class="col-md-3 align-self-end">
             <button id="searchBtn" type="submit" class="btn btn-primary w-100" disabled>Пошук на AutoScout24</button>
         </div>
     </form>
 
-    <hr>
-    <p>Кількість авто: {{ cars|length }}</p>
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Марка</th>
-            <th>Модель</th>
-            <th>Рік</th>
-            <th>Тип пального</th>
-            <th>Обʼєм (см3/л)</th>
-            <th>Країна</th>
-            <th>Ціна, €</th>
-            <th>Мито, грн</th>
-            <th>Фінальна ціна, грн</th>
-            <th>Посилання</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for car in cars %}
-        <tr>
-            <td>{{ car.brand or '—' }}</td>
-            <td>{{ car.model or '—' }}</td>
-            <td>{{ car.year or '—' }}</td>
-            <td>{{ fuel_types[car.fuel_type.lower()].label }}</td>
-            <td> {{ car.engine_volume }} см³ / {{ car.engine_liters }} л </td>
-            <td>{{ country_names.get(car.country) or car.country or '—' }}</td>
-            <td>{{ car.price or '—' }}</td>
-            <td>{{ car.customs_uah or '—' }}</td>
-            <td>{{ car.final_price_uah or '—' }}</td>
-            <td>
-                {% if car.link %}
-                <a href="{{ car.link }}" target="_blank">Перейти</a>
-                {% else %}
-                —
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
 </div>
 <script src="{{ url_for('static', filename='js/car_select.js') }}" defer></script>
 </body>

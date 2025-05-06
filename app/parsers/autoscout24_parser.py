@@ -66,8 +66,8 @@ class AutoScout24Parser:
         params, path = self._configure_url(self)
         page = 1
         while True:
-            # if page > 2:
-            #     break
+            if page > 2:
+                break
 
             params["page"] = str(page)
             query = "&".join([f"{k}={v}" for k, v in params.items()])

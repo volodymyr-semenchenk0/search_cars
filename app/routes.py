@@ -9,8 +9,6 @@ from app.parsers.autoscout24_parser import AutoScout24Parser
 def register_routes(app):
     @app.route("/", methods=["GET"])
     def index():
-        makes = get_all_makes()
-
         columns = [
             'brand', 'model', 'year', 'fuel_type', 'engine_volume',
             'country', 'price', 'customs_uah', 'final_price_uah', 'link'
@@ -26,9 +24,19 @@ def register_routes(app):
             cars.append(car)
 
         return render_template(
-            "index.html",
-            makes=makes,
+            "main.html",
             cars=cars,
+            fuel_types=FUEL_TYPES,
+            country_names=COUNTRY_NAMES,
+        )
+
+    @app.route("/search", methods=["GET"])
+    def search():
+        makes = get_all_makes()
+
+        return render_template(
+            "search.html",
+            makes=makes,
             years=get_years_list(),
             fuel_types=FUEL_TYPES,
             country_names=COUNTRY_NAMES,
@@ -38,7 +46,7 @@ def register_routes(app):
         )
 
     @app.route("/parse-query", methods=["GET"])
-    def parse():
+    def parse_query():
         data = request.form if request.method == "POST" else request.args
 
         params = {
@@ -56,7 +64,7 @@ def register_routes(app):
 
         parser = AutoScout24Parser(**params)
         parser.parse_autoscout24()
-        return redirect(url_for("index"))
+        return redirect(url_for("search"))
 
     @app.route("/api/models")
     def api_models():
