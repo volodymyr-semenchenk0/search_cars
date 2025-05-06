@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from app.customs import CalculateCustoms
 from app.repositories.car_repository import save_car_to_db
 from app.utils.logger_config import logger
+from app.utils.ev_utils import find_battery_capacity
 
 
 class AutoScout24Parser:
@@ -114,10 +115,11 @@ class AutoScout24Parser:
                         mileage_val = self._safe_int(vehicle.get("mileageInKmRaw"))
                         fuel_val = vehicle.get("fuelCategory", {}).get("formatted").lower()
 
+                        battery_capacity_kwh_val = None
                         if fuel_val == "electric":
-                            engine_volume = 0
-                        else:
-                            engine_volume = self._safe_float(vehicle.get("rawDisplacementInCCM"))
+                            battery_capacity_kwh_val = find_battery_capacity(brand_val, model_val, year_val)
+
+                        engine_volume = self._safe_float(vehicle.get("rawDisplacementInCCM"))
 
                         price_val = self._safe_float(listing.get("prices", {}).get("public", {}).get("priceRaw"))
                         transmission_val = vehicle.get("transmissionType")
@@ -125,11 +127,6 @@ class AutoScout24Parser:
 
                         country_val = listing.get("location", {}).get("countryCode")
                         body_val = vehicle.get("bodyType")
-
-                        # battery_capacity_kwh_val = None
-                        # if fuel_val == "electric":
-                        #     specs = find_ev_specs(brand_val, model_val, year_val)
-                        #     battery_capacity_kwh_val = specs[0]['battery_capacity_kwh']
 
                     except Exception as e:
                         logger.error("Неможливо обробити JSON структуру:", e)
@@ -141,8 +138,10 @@ class AutoScout24Parser:
                         engine_volume,
                         year_val,
                         fuel_val,
-                        battery_capacity_kwh=0.0,
+                        battery_capacity_kwh=battery_capacity_kwh_val,
                     )
+
+
                     if calc_customs is not None:
                         customs_uah = calc_customs.get("customs_value_uah")
                         final_price = calc_customs.get("total_uah")
@@ -155,7 +154,7 @@ class AutoScout24Parser:
                         "body_type": body_val,
                         "fuel_type": fuel_val,
                         "engine_volume": engine_volume,
-                        # "battery_capacity_kwh": battery_capacity_kwh_val,
+                        "battery_capacity_kwh": battery_capacity_kwh_val,
                         "transmission": transmission_val,
                         "drive": drive_val,
                         "mileage": mileage_val,

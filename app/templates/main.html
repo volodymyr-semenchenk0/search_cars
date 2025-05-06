@@ -27,7 +27,7 @@
         <p>Кількість авто: {{ cars|length }}</p>
     </div>
     <hr>
-    <form method="GET" class="row g-3 mb-4">
+    <form id="searchForm" method="GET" class="row g-3 mb-4">
         <!-- Бренд -->
         <div class="col-md-3">
             <label for="make" class="form-label">Марка</label>
@@ -44,8 +44,7 @@
         <!-- Модель -->
         <div class="col-md-3">
             <label for="model" class="form-label">Модель</label>
-            <select class="form-select" id="model" name="model" disabled
-                    data-initial-model="{{ selected.model or '' }}">
+            <select id="model" name="model" class="form-select" disabled data-selected="{{ selected.model or '' }}">
                 <option value="">Оберіть модель</option>
             </select>
         </div>
@@ -162,14 +161,5 @@
     </table>
 </div>
 <script src="{{ url_for('static', filename='js/car_select.js') }}" defer></script>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const initialMake = "{{ selected.brand or '' }}";
-    if (initialMake) {
-      // Задаємо бренд і тригеримо change, щоб JS підвантажив моделі
-      $('#make').val(initialMake).trigger('change');
-    }
-  });
-</script>
 </body>
 </html>

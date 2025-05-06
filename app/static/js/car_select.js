@@ -1,70 +1,40 @@
-$(function(){
-    // Select2 initialization for brand/model
-    $("#make").select2({ theme:'bootstrap-5', placeholder:'Оберіть марку', allowClear:true, width:'100%' });
-    $("#model").select2({ theme:'bootstrap-5', placeholder:'Оберіть модель', allowClear:true, width:'100%' });
+$(function () {
+    const modelSelect = $('#model');
+    const preselectedMake = $('#make').val();
+    const preselectedModel = decodeURIComponent(modelSelect.data('selected') || '');
 
-    // Load models on brand change
-    $('#make').on('change', function() {
+    // ініціалізація Select2
+    $('#make').select2({ theme: 'bootstrap-5', placeholder: 'Оберіть марку', allowClear: true });
+    modelSelect.select2({ theme: 'bootstrap-5', placeholder: 'Оберіть модель', allowClear: true });
+
+    // завантаження моделей при виборі марки
+    $('#make').on('change', function () {
         const make = $(this).val();
-        const modelSelect = $('#model');
-        modelSelect.prop('disabled', true).html('<option value="">Завантаження…</option>');
+        modelSelect.prop('disabled', true).html('<option>Завантаження…</option>').trigger('change');
+
         if (!make) {
-            modelSelect.html('<option value="">Оберіть модель</option>');
+            modelSelect.html('<option value="">Оберіть модель</option>').prop('disabled', true).trigger('change');
             return;
         }
-        $.getJSON(`/api/models?make=${make}`, data => {
+
+        $.getJSON(`/api/models?make=${make}`, function (data) {
             let opts = '<option value="">Оберіть модель</option>';
-            data.forEach(m => opts += `<option value="${m.model_name}">${m.model_name}</option>`);
-            modelSelect.html(opts)
-              .prop('disabled', false)
-              .trigger('modelsLoaded');  // ← ось тут
-        });
-    });
+            data.forEach(m => {
+                opts += `<option value="${m.model_name}">${m.model_name}</option>`;
+            });
+            modelSelect.html(opts).prop('disabled', false).trigger('change');
 
-
-
-    // Button enable/disable logic
-    const $form = $('#searchForm'), $btn = $('#searchBtn');
-    const init = {
-        make:     $('#make').val(),
-        model:     $('#model').val(),
-        pricefrom: $('#pricefrom').val(),
-        priceto:   $('#priceto').val(),
-        fregfrom:  $('#fregfrom').val(),
-        fregto:    $('#fregto').val(),
-        kmfrom:    $('#kmfrom').val(),
-        kmto:      $('#kmto').val(),
-        cy:        $('#cy').val()
-    };
-    function changed() {
-        return Object.keys(init).some(k => $('#' + k).val() !== init[k]);
-    }
-    $btn.prop('disabled', !changed());
-    $form.on('input change', '#brand, #model, #pricefrom, #priceto, #fregfrom, #fregto, #kmfrom, #kmto, #cy', function() {
-        $btn.prop('disabled', !changed());
-    });
-    $form.on('submit', () => $btn.prop('disabled', true));
-
-
-    // Перед сабмітом: вимикаємо порожні поля, щоб вони не потрапили в URL
-    $form.on('submit', function() {
-        $(this).find('select, input').each(function() {
-            if (!$(this).val()) {
-                $(this).prop('disabled', true);
+            // якщо є попередньо обрана модель — встановлюємо її
+            if (make === preselectedMake && preselectedModel) {
+                modelSelect.val(preselectedModel).trigger('change.select2');
             }
         });
     });
 
-  // Після завантаження моделей, відновлюємо вибрану модель
-  const initialModel = $('#model').data('initial-model');
-  if (initialModel) {
-    // Запускаємо change на бренд, щоб підвантажити моделі
-    $('#brand').trigger('change');
-    $('#model').on('modelsLoaded', function () {
-      $(this).val(initialModel).trigger('change');
-    });
-  }
-
+    // якщо є збережені make + model — ініціюємо завантаження моделей
+    if (preselectedMake && preselectedModel) {
+        $('#make').trigger('change');
+    }
 });
 
 $(function(){

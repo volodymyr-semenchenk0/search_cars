@@ -1,41 +1,40 @@
-import requests
 from functools import lru_cache
-from app.utils.logger_config import logger
+import requests
+import logging
 
-# URL до 'raw' JSON файлу Open EV Data
+logger = logging.getLogger(__name__)
+
 RAW_URL = "https://raw.githubusercontent.com/KilowattApp/open-ev-data/master/data/ev-data.json"
 
 @lru_cache(maxsize=1)
 def load_ev_database():
-    resp = requests.get(RAW_URL, timeout=10)
-    resp.raise_for_status()
-    j = resp.json()
-    # Якщо дані вкладені під 'data'
-    if isinstance(j, dict) and 'data' in j and isinstance(j['data'], list):
-        return j['data']
-    if isinstance(j, list):
-        return j
-    logger.error(f"Unexpected JSON structure from EV database: {type(j)}")
+    try:
+        resp = requests.get(RAW_URL, timeout=10)
+        resp.raise_for_status()
+        j = resp.json()
+        if isinstance(j, dict) and 'data' in j and isinstance(j['data'], list):
+            return j['data']
+        if isinstance(j, list):
+            return j
+        logger.error(f"Unexpected JSON structure from EV database: {type(j)}")
+    except Exception as e:
+        logger.error(f"Failed to load EV data: {e}")
     return []
 
-
-def find_ev_specs(brand: str, model: str, year: int = None) -> list:
-
+def find_battery_capacity(brand: str, model: str = None, year: int = None) -> float | None:
     data = load_ev_database()
-    results = []
-    for car in data:
-        if car.get('brand', '').lower() == brand.lower() and car.get('model', '').lower() == model.lower():
+    brand = brand.lower().strip()
+    model = model.lower().strip() if model else None
 
-            if year is None or car.get('release_year') == year:
-                adapted = {
-                    'brand': car.get('brand'),
-                    'model': car.get('model'),
-                    'year': car.get('release_year'),
-                    'battery_capacity_kwh': car.get('usable_battery_size'),
-                    'energy_consumption_wh_mi': car.get('energy_consumption', {}).get('average_consumption'),
-                    'ac_charger_max_kw': car.get('ac_charger', {}).get('max_power'),
-                    'dc_charger_max_kw': car.get('dc_charger', {}).get('max_power'),
-                    'charging_curve': car.get('dc_charger', {}).get('charging_curve'),
-                }
-                results.append(adapted)
-    return results
+    for car in data:
+        if car.get('brand', '').lower() != brand:
+            continue
+
+        if model and car.get('model', '').lower() != model:
+            continue
+
+        if year is not None and car.get('release_year') != year:
+            continue
+
+        return car.get('usable_battery_size')
+    return None

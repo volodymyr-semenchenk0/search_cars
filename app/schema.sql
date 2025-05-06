@@ -16,6 +16,6 @@ CREATE TABLE IF NOT EXISTS cars (
     final_price_uah DECIMAL(12,2),
     link TEXT,
     source VARCHAR(50),
-    battery_capacity_kwh DECIMAL(6,2),
+    battery_capacity_kwh FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

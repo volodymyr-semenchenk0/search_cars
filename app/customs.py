@@ -47,7 +47,9 @@ class CalculateCustoms:
         self.duty_rate = 0.10
         self.vat_rate = 0.20
 
-    def _calculate_customs_duty(self, customs_value_uah: float) -> float:
+    def _calculate_customs_duty(self, customs_value_uah: float, fuel_type: str) -> float:
+        if fuel_type.lower() == "electric":
+            return 0.0
         return customs_value_uah * self.duty_rate
 
     @staticmethod
@@ -57,13 +59,16 @@ class CalculateCustoms:
             fuel_type: str,
             battery_capacity_kwh: Optional[float] = None
     ) -> float:
-        volume_l = engine_volume_cc / 1000
-        age = age_years
         ft = fuel_type
+
         if ft == "electric":
             if battery_capacity_kwh is None:
                 raise ValueError("Потрібно вказати battery_capacity_kwh для електрокара")
             return battery_capacity_kwh * 1.0
+
+        volume_l = engine_volume_cc / 1000
+        age = age_years
+
         if ft == "hybrid":
             base = 100.0
         elif ft == "petrol":
@@ -104,8 +109,15 @@ class CalculateCustoms:
             raw_fuel_type: str,
             battery_capacity_kwh: Optional[float] = None
     ) -> Optional[Dict[str, float]]:
-        if customs_value_eur is None or engine_volume_cc is None or production_year is None:
+
+        if customs_value_eur is None or production_year is None:
             return None
+        if raw_fuel_type == 'electric':
+            if battery_capacity_kwh is None:
+                return None
+        else:
+            if engine_volume_cc is None:
+                return None
 
         customs_value_uah = customs_value_eur * self.eur_to_uah_rate
         current_year = datetime.now().year
@@ -116,11 +128,11 @@ class CalculateCustoms:
             engine_volume_cc, age_years, fuel_type, battery_capacity_kwh
         )
         excise_uah = excise_eur * self.eur_to_uah_rate
-        duty = self._calculate_customs_duty(customs_value_uah)
+        duty = self._calculate_customs_duty(customs_value_uah, fuel_type)
         vat = self._calculate_vat(customs_value_uah, duty, excise_uah, fuel_type)
         pension = self._calculate_pension_fee(customs_value_uah)
         total = customs_value_uah + duty + excise_uah + vat + pension
-
+        logger.debug(f"customs: {customs_value_eur}, volume: {engine_volume_cc}, capacity: {battery_capacity_kwh}")
         return {
             "customs_value_uah": round(customs_value_uah, 2),
             "duty_uah": round(duty, 2),
