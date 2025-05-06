@@ -3,7 +3,7 @@ from typing import Optional, Dict
 
 import requests
 
-from logger_config import logger
+from app.utils.logger_config import logger
 
 
 class CalculateCustoms:
@@ -25,7 +25,7 @@ class CalculateCustoms:
     @staticmethod
     def _map_fuel_type(raw: str) -> str:
 
-        s = raw.strip().lower()
+        s = raw.strip()
 
         if 'hybrid' in s or 'electric/gasoline' in s or 'electric/diesel' in s:
             return 'hybrid'
@@ -130,53 +130,3 @@ class CalculateCustoms:
             "pension_fee_uah": round(pension, 2),
             "total_uah": round(total, 2)
         }
-
-# from typing import Optional
-#
-# import requests
-# from datetime import datetime
-# from logger_config import logger
-#
-# FALLBACK_RATE = 47
-# VAT_RATE = 0.2
-# IMPORT_DUTY_RATE = 0.1
-#
-#
-# def get_eur_to_uah_rate():
-#     try:
-#         response = requests.get("https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json")
-#         if response.status_code == 200:
-#             data = response.json()
-#             return float(data[0]["rate"])
-#         else:
-#             logger.warning(f"Не вдалося отримати курс євро від НБУ. Статус:{response.status_code}")
-#             return FALLBACK_RATE
-#     except Exception as e:
-#         logger.warning(f"Виняток при запиті до НБУ: {e}")
-#         return FALLBACK_RATE
-#
-#
-# def calculate_customs(year: int, engine_volume: float, fuel_type: str, price_eur: float) -> Optional[float] :
-#     if fuel_type and fuel_type.lower() in ["electric", "electricity", "bev", "ev"]:
-#         return 0.0
-#
-#     if engine_volume is None or year is None or price_eur is None:
-#         return None
-#
-#     current_year = datetime.now().year
-#     car_age = max(1, current_year - year)
-#     eur_rate = get_eur_to_uah_rate()
-#
-#     if fuel_type and any(ft in fuel_type.lower() for ft in ['hybrid', 'phev', 'hev']):
-#         base_rate = 50
-#     elif fuel_type and "diesel" in fuel_type.lower():
-#         base_rate = 75
-#     else:
-#         base_rate = 50
-#
-#     excise = base_rate * engine_volume * car_age
-#     nds = VAT_RATE * (price_eur * eur_rate + excise)
-#     import_duty = IMPORT_DUTY_RATE * (price_eur * eur_rate)
-#     total = excise + nds + import_duty
-#
-#     return round(total, 2)

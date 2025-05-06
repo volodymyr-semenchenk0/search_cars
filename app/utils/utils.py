@@ -1,12 +1,5 @@
 from datetime import datetime
 
-PARSE_WEBSITES = {
-    "autoscout24": {
-        "url": "https://www.autoscout24.com/"
-    }
-}
-
-
 COUNTRY_NAMES = {
     "DE": "Німеччина",
     "AT": "Австрія",

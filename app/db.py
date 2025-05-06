@@ -1,6 +1,6 @@
 import mysql.connector
 
-from logger_config import logger
+from app.utils.logger_config import logger
 
 
 def get_db_connection():

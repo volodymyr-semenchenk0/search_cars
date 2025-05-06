@@ -4,10 +4,9 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
-from customs import CalculateCustoms
-from database.db_manager import save_car_to_db
-from ev_utils import find_ev_specs
-from logger_config import logger
+from app.customs import CalculateCustoms
+from app.db import save_car_to_db
+from app.utils.logger_config import logger
 
 
 class AutoScout24Parser:
@@ -67,8 +66,8 @@ class AutoScout24Parser:
         params, path = self._configure_url(self)
         page = 1
         while True:
-            if page > 2:
-                break
+            # if page > 2:
+            #     break
 
             params["page"] = str(page)
             query = "&".join([f"{k}={v}" for k, v in params.items()])

@@ -1,4 +1,4 @@
-from customs import CalculateCustoms
+from app.customs import CalculateCustoms
 
 price_val = 3500.0
 engine_volume = 1500.0

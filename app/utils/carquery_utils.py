@@ -1,7 +1,7 @@
 import requests
 
 from functools import lru_cache
-from logger_config import logger
+from app.utils.logger_config import logger
 
 @lru_cache(maxsize=1)
 def get_all_makes():
