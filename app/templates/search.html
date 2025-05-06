@@ -10,20 +10,23 @@
           rel="stylesheet"/>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body class="bg-light">
+<body class="bg-white">
 <div class="container mt-5">
     <h2 class="mb-4">Форма для пошуку авто на закордонних сайтах</h2>
-    <form id="searchForm" method="GET" action="{{ url_for('parse_query') }}" class="row g-3">
+
+    {% include "loader.html" %}
+    <form id="searchForm" method="POST" action="{{ url_for('parse_query') }}" class="row g-3">
 
         <!-- Бренд -->
         <div class="col-md-3">
-            <label for="brand" class="form-label">Марка</label>
-            <select class="form-select" id="brand" name="brand">
+            <label for="make" class="form-label">Марка</label>
+            <select class="form-select" id="make" name="make">
                 <option value="">Оберіть марку</option>
                 {% for make in makes %}
-                <option value="{{ make.make_id }}">
-                    {% if request.form.get('brand') == make.make_id %} selected{% endif %} {{ make.make_display }}
+                <option value="{{ make.make_id }}" {% if selected.brand==make.make_id %}selected{% endif %}>
+                    {{ make.make_display }}
                 </option>
                 {% endfor %}
             </select>
@@ -45,7 +48,7 @@
                 <select class="form-select me-2" id="pricefrom" name="pricefrom">
                     <option value="">Від</option>
                     {% for p in price_options %}
-                    <option value="{{ p }}"> {% if request.form.get('pricefrom') == p|string %} selected{% endif %}
+                    <option value="{{ p }}" {% if selected.pricefrom==p|string %}selected{% endif %}>
                         {{ "{:,}".format(p) }} €
                     </option>
                     {% endfor %}
@@ -54,7 +57,7 @@
                 <select class="form-select" id="priceto" name="priceto">
                     <option value="">До</option>
                     {% for p in price_options %}
-                    <option value="{{ p }}"> {% if request.form.get('priceto') == p|string %} selected{% endif %}
+                    <option value="{{ p }}" {% if selected.priceto==p %}selected{% endif %}>
                         {{ "{:,}".format(p) }} €
                     </option>
                     {% endfor %}
@@ -70,8 +73,8 @@
                 <select class="form-select me-2" id="fregfrom" name="fregfrom">
                     <option value="">Від</option>
                     {% for y in years %}
-                    <option value="{{ y }}"> {% if request.form.get('fregfrom') == y|string %} selected{% endif %} {{ y
-                        }}
+                    <option value="{{ y }}" {% if selected.fregfrom==y %}selected{% endif %}>
+                        {{ y }}
                     </option>
                     {% endfor %}
                 </select>
@@ -79,8 +82,8 @@
                 <select class="form-select" id="fregto" name="fregto">
                     <option value="">До</option>
                     {% for y in years %}
-                    <option value="{{ y }}"> {% if request.form.get('fregto') == y|string %} selected{% endif %} {{ y
-                        }}
+                    <option value="{{ y }}" {% if selected.fregto==y %}selected{% endif %}>
+                    {{ y }}
                     </option>
                     {% endfor %}
                 </select>
@@ -95,7 +98,7 @@
                 <select class="form-select me-2" id="kmfrom" name="kmfrom">
                     <option value="">Від</option>
                     {% for m in mileage_options %}
-                    <option value="{{ m }}"> {% if request.form.get('kmfrom')==m|string %} selected{% endif %}
+                    <option value="{{ m }}" {% if selected.kmfrom==m %}selected{% endif %}>
                         {{ "{:,}".format(m) }}
                     </option>
                     {% endfor %}
@@ -105,7 +108,7 @@
                 <select class="form-select" id="kmto" name="kmto">
                     <option value="">До</option>
                     {% for m in mileage_options %}
-                    <option value="{{ m }}"> {% if request.form.get('kmto')==m|string %} selected{% endif %}
+                    <option value="{{ m }}" {% if selected.kmto==m %}selected{% endif %}>
                         {{ "{:,}".format(m) }}
                     </option>
                     {% endfor %}
@@ -119,19 +122,19 @@
             <select class="form-select" id="cy" name="cy">
                 <option value="">Усі країни</option>
                 {% for name, code in country_codes.items() %}
-                <option value="{{ code }}">
-                    {% if request.form.get('cy') == code %} selected{% endif %} {{ name }}
+                <option value="{{ code }}" {% if selected.cy==code %}selected{% endif %}>
+                    {{ name }}
                 </option>
                 {% endfor %}
             </select>
         </div>
 
         <div class="col-md-3">
-            <label for="fuel" class="form-label">Тип палива</label>
+            <label for="fuel" class="form-label">Тип пального</label>
             <select id="fuel" name="fuel" class="form-select">
                 <option value="">Усі типи</option>
                 {% for key, obj in fuel_types.items() %}
-                <option value="{{ obj.code }}"> {% if request.form.get('fuel')==obj.code %} selected{% endif %}
+                <option value="{{ obj.code }}" {% if selected.fuel==obj.code %}selected{% endif %}>
                     {{ obj.label }}
                 </option>
                 {% endfor %}
@@ -139,7 +142,7 @@
         </div>
         <!-- Кнопка -->
         <div class="col-md-3 align-self-end">
-            <button id="searchBtn" type="submit" class="btn btn-primary w-100" disabled>Пошук на AutoScout24</button>
+            <button id="searchBtn" type="submit" class="btn btn-primary w-100">Пошук на AutoScout24</button>
         </div>
     </form>
 

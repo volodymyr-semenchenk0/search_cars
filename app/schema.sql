@@ -1,7 +1,7 @@
 
 CREATE TABLE IF NOT EXISTS cars (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    brand VARCHAR(100),
+    make VARCHAR(100),
     model VARCHAR(100),
     year INT,
     body_type VARCHAR(100),

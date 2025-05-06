@@ -1,10 +1,10 @@
 $(function(){
     // Select2 initialization for brand/model
-    $('#brand').select2({ theme:'bootstrap-5', placeholder:'Оберіть марку', allowClear:true, width:'100%' });
-    $('#model').select2({ theme:'bootstrap-5', placeholder:'Оберіть модель', allowClear:true, width:'100%' });
+    $("#make").select2({ theme:'bootstrap-5', placeholder:'Оберіть марку', allowClear:true, width:'100%' });
+    $("#model").select2({ theme:'bootstrap-5', placeholder:'Оберіть модель', allowClear:true, width:'100%' });
 
     // Load models on brand change
-    $('#brand').on('change', function() {
+    $('#make').on('change', function() {
         const make = $(this).val();
         const modelSelect = $('#model');
         modelSelect.prop('disabled', true).html('<option value="">Завантаження…</option>');
@@ -15,14 +15,18 @@ $(function(){
         $.getJSON(`/api/models?make=${make}`, data => {
             let opts = '<option value="">Оберіть модель</option>';
             data.forEach(m => opts += `<option value="${m.model_name}">${m.model_name}</option>`);
-            modelSelect.html(opts).prop('disabled', false);
+            modelSelect.html(opts)
+              .prop('disabled', false)
+              .trigger('modelsLoaded');  // ← ось тут
         });
     });
+
+
 
     // Button enable/disable logic
     const $form = $('#searchForm'), $btn = $('#searchBtn');
     const init = {
-        brand:     $('#brand').val(),
+        make:     $('#make').val(),
         model:     $('#model').val(),
         pricefrom: $('#pricefrom').val(),
         priceto:   $('#priceto').val(),
@@ -51,4 +55,23 @@ $(function(){
         });
     });
 
+  // Після завантаження моделей, відновлюємо вибрану модель
+  const initialModel = $('#model').data('initial-model');
+  if (initialModel) {
+    // Запускаємо change на бренд, щоб підвантажити моделі
+    $('#brand').trigger('change');
+    $('#model').on('modelsLoaded', function () {
+      $(this).val(initialModel).trigger('change');
+    });
+  }
+
+});
+
+$(function(){
+    $('#searchForm').on('submit', function(){
+        $('#loader').removeClass('d-none').addClass('d-flex');
+    });
+    $(window).on('load', function(){
+        $('#loader').removeClass('d-flex').addClass('d-none');
+    });
 });

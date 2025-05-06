@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from app.customs import CalculateCustoms
-from app.db import save_car_to_db
+from app.repositories.car_repository import save_car_to_db
 from app.utils.logger_config import logger
 
 
@@ -13,8 +13,8 @@ class AutoScout24Parser:
     _BASE_URL = "https://www.autoscout24.com"
     brand, model, fregto, kmto, cy = None, None, None, None, None
 
-    def __init__(self, brand, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel):
-        self.brand = brand
+    def __init__(self, make, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel):
+        self.make = make
         self.model = model
         self.pricefrom = pricefrom
         self.priceto = priceto
@@ -54,8 +54,8 @@ class AutoScout24Parser:
             params["fuel"] = self.fuel
 
         path = "/lst"
-        if self.brand:
-            path += f"/{self.brand.lower()}"
+        if self.make:
+            path += f"/{self.make.lower()}"
         if self.model:
             path += f"/{self.model.lower()}"
 
@@ -149,7 +149,7 @@ class AutoScout24Parser:
 
                     car_data = {
                         "identifier": identifier_val,
-                        "brand": brand_val,
+                        "make": brand_val,
                         "model": model_val,
                         "year": year_val,
                         "body_type": body_val,
@@ -167,7 +167,7 @@ class AutoScout24Parser:
                         "source": "AutoScout24"
                     }
 
-                    print("Збереження авто:", car_data)
+                    logger.debug(f"Збереження авто: {car_data}")
                     save_car_to_db(car_data)
 
                 except Exception as e:

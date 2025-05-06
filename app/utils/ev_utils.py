@@ -1,4 +1,3 @@
-# evdb_utils.py
 import requests
 from functools import lru_cache
 from app.utils.logger_config import logger
