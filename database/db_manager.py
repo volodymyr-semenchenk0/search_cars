@@ -32,8 +32,8 @@ def save_car_to_db(car_data):
 
         insert_query = (
             "INSERT INTO cars (identifier, brand, model, year, body_type, fuel_type, engine_volume, "
-            "transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            "battery_capacity_kwh, transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
 
         params = (
@@ -44,6 +44,7 @@ def save_car_to_db(car_data):
             car_data.get("body_type"),
             car_data.get("fuel_type"),
             car_data.get("engine_volume"),
+            car_data.get("battery_capacity_kwh"),
             car_data.get("transmission"),
             car_data.get("drive"),
             car_data.get("mileage"),

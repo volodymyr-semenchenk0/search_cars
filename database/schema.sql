@@ -11,10 +11,11 @@ CREATE TABLE IF NOT EXISTS cars (
     drive VARCHAR(50),
     mileage INT,
     country VARCHAR(100),
-    price DECIMAL,
-    customs_uah DECIMAL,
-    final_price_uah DECIMAL,
+    price DECIMAL(12,2),
+    customs_uah DECIMAL(12,2),
+    final_price_uah DECIMAL(12,2),
     link TEXT,
     source VARCHAR(50),
+    battery_capacity_kwh DECIMAL(6,2),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

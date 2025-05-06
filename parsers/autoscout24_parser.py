@@ -6,17 +6,22 @@ from bs4 import BeautifulSoup
 
 from customs import CalculateCustoms
 from database.db_manager import save_car_to_db
+from ev_utils import find_ev_specs
 from logger_config import logger
 
-class AutoScout24Parser:
 
+class AutoScout24Parser:
     _BASE_URL = "https://www.autoscout24.com"
     brand, model, fregto, kmto, cy = None, None, None, None, None
 
-    def __init__(self, brand, model, fregto, kmto, cy):
+    def __init__(self, brand, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy):
         self.brand = brand
         self.model = model
+        self.pricefrom = pricefrom
+        self.priceto = priceto
+        self.fregfrom = fregfrom
         self.fregto = fregto
+        self.kmfrom = kmfrom
         self.kmto = kmto
         self.cy = cy
 
@@ -31,22 +36,28 @@ class AutoScout24Parser:
             "damaged_listing": "exclude",
         }
 
+        if self.fregfrom:
+            params["fregfrom"] = self.fregfrom
         if self.fregto:
             params["fregto"] = self.fregto
+        if self.pricefrom:
+                params["pricefrom"] = self.pricefrom
+        if self.priceto:
+            params["priceto"] = self.priceto
+        if self.kmfrom:
+            params["kmfrom"] = self.kmfrom
         if self.kmto:
             params["kmto"] = self.kmto
-        if  self.cy:
-            params["cy"] =  self.cy
+        if self.cy:
+            params["cy"] = self.cy
 
         path = "/lst"
         if self.brand:
             path += f"/{self.brand.lower()}"
-        if  self.model:
-            path += f"/{ self.model.lower()}"
-
+        if self.model:
+            path += f"/{self.model.lower()}"
 
         return params, path
-
 
     def parse_autoscout24(self):
 
@@ -113,6 +124,11 @@ class AutoScout24Parser:
                         country_val = listing.get("location", {}).get("countryCode")
                         body_val = vehicle.get("bodyType")
 
+                        battery_capacity_kwh_val = None
+                        if fuel_val == "Electric":
+                            specs = find_ev_specs(brand_val, model_val, year_val)
+                            battery_capacity_kwh_val = specs[0]['battery_capacity_kwh']
+
                     except Exception as e:
                         logger.error("Неможливо обробити JSON структуру:", e)
                         continue
@@ -123,7 +139,7 @@ class AutoScout24Parser:
                         engine_volume,
                         year_val,
                         fuel_val,
-                        battery_capacity_kwh=89.99,
+                        battery_capacity_kwh_val,
                     )
                     if calc_customs is not None:
                         customs_uah = calc_customs.get("customs_value_uah")
@@ -137,6 +153,7 @@ class AutoScout24Parser:
                         "body_type": body_val,
                         "fuel_type": fuel_val,
                         "engine_volume": engine_volume,
+                        "battery_capacity_kwh": battery_capacity_kwh_val,
                         "transmission": transmission_val,
                         "drive": drive_val,
                         "mileage": mileage_val,

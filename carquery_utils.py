@@ -1,59 +1,45 @@
 import requests
-import json
-from functools import lru_cache
-import logging
 
-logger = logging.getLogger(__name__)
+from functools import lru_cache
+from logger_config import logger
 
 @lru_cache(maxsize=1)
 def get_all_makes():
-    """
-    Повертає список усіх автомобільних марок з CarQuery API (JSONP) з кешуванням.
-    """
     try:
-        response = requests.get(
-            'https://www.carqueryapi.com/api/0.3/?cmd=getMakes&callback=cb',
-            headers={'User-Agent': 'Mozilla/5.0'}, timeout=5
-        )
-        text = response.text
-        start = text.find('(')
-        end = text.rfind(')')
-        if start < 0 or end < 0:
-            logger.error(f"Invalid JSONP for makes: {text[:100]}")
-            return []
-        payload = text[start+1:end]
-        data = json.loads(payload)
-        return data.get('Makes', [])
+        url = "https://vpic.nhtsa.dot.gov/api/vehicles/GetMakesForVehicleType/Passenger%20Car?format=json"
+        resp = requests.get(url, timeout=5)
+        resp.raise_for_status()
+        results = resp.json().get("Results", [])
+        makes = []
+        for m in results:
+            name = m.get("MakeName")
+            if name:
+                make_id = name.lower().replace(" ", "-")
+                makes.append({"make_id": make_id, "make_display": name})
+        return makes
     except Exception as e:
-        logger.error(f"Error fetching makes: {e}")
+        logger.error(f"Error fetching passenger-car makes from vPIC: {e}")
         return []
 
 @lru_cache(maxsize=128)
 def get_models_for_make(make_id):
-    """
-    Повертає список усіх унікальних моделей для make_id
-    з CarQuery API через виклик GetTrims (JSONP) з кешуванням.
-    """
+
+    make_name = make_id.replace('-', ' ').title()
     try:
-        url = f'https://www.carqueryapi.com/api/0.3/?cmd=getTrims&make={make_id}&callback=cb'
-        response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=5)
-        text = response.text
-        start = text.find('(')
-        end = text.rfind(')')
-        if start < 0 or end < 0:
-            logger.error(f"Invalid JSONP for trims ({make_id}): {text[:100]}")
-            return []
-        payload = text[start+1:end]
-        data = json.loads(payload)
-        trims = data.get('Trims', [])
+        resp = requests.get(
+            f"https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/{make_name}?format=json",
+            timeout=5
+        )
+        resp.raise_for_status()
+        results = resp.json().get("Results", [])
         seen = set()
         models = []
-        for t in trims:
-            name = t.get('model_name')
+        for m in results:
+            name = m.get('Model_Name')
             if name and name not in seen:
                 seen.add(name)
                 models.append({'model_name': name})
         return models
     except Exception as e:
-        logger.error(f"Error fetching trims for {make_id}: {e}")
+        logger.error(f"Error fetching models for {make_name} from vPIC: {e}")
         return []
