@@ -1,0 +1,65 @@
+# Byte-compiled / optimized / DLL files
+
+**pycache**/
+\*.py\[cod]
+\*\$py.class
+
+# C extensions
+
+\*.so
+
+# Distribution / packaging
+
+build/
+dist/
+\*.egg-info/
+
+# Virtual environments
+
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables file
+
+.env
+
+# SQLite database files
+
+\*.db
+
+# Logs
+
+\*.log
+app\_logs.log
+
+# pytest cache
+
+.pytest\_cache/
+
+# Coverage reports
+
+.coverage
+htmlcov/
+
+# Editor directories and files
+
+.vscode/
+.idea/
+
+# macOS files
+
+.DS\_Store
+
+# Windows thumbnail cache files
+
+Thumbs.db
+
+# Static build artifacts (if any)
+
+/static/
+
+# Node modules (if using JS packages)
+
+node\_modules/
