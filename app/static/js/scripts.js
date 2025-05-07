@@ -45,3 +45,14 @@ $(function(){
         $('#loader').removeClass('d-flex').addClass('d-none');
     });
 });
+
+let deleteModal = document.getElementById('deleteModal');
+deleteModal.addEventListener('show.bs.modal', function (event) {
+    // Кнопка, яка викликала модал
+    let btn = event.relatedTarget;
+    let carId = btn.getAttribute('data-car-id');
+
+    // Змінюємо action форми всередині модала
+    let form = document.getElementById('deleteModalForm');
+    form.action = '/cars/' + carId + '/delete';
+});

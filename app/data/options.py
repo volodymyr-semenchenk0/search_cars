@@ -76,8 +76,18 @@ FUEL_TYPES = {
     "hydrogen": {
         "label": "Водень",
         "code": "H"
+    },
+    "others": {
+        "label": "Інше",
+        "code": "O"
     }
 }
+
+def get_fuel_label(key: str) -> str:
+    return FUEL_TYPES.get(key, {}).get('label', key)
+
+def get_fuel_code(key: str) -> str:
+    return FUEL_TYPES.get(key, {}).get('code', key)
 
 BODY_TYPES = {
     "sedan": "Седан",

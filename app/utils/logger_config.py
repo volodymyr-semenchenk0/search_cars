@@ -19,10 +19,10 @@ formatter = ColoredFormatter(
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 
-# # Вивід у файл
-# file_handler = logging.FileHandler("app_logs.log", encoding="utf-8")
-# file_handler.setFormatter(logging.Formatter("[%(levelname)s] %(asctime)s - %(message)s"))
+# Вивід у файл
+file_handler = logging.FileHandler("app_logs.log", encoding="utf-8")
+file_handler.setFormatter(logging.Formatter("[%(levelname)s] %(asctime)s - %(message)s"))
 
 # Додати хендлери
 logger.addHandler(console_handler)
-# logger.addHandler(file_handler)
+logger.addHandler(file_handler)

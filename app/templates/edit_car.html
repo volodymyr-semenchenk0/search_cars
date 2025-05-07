@@ -1,112 +1,117 @@
-{# templates/edit_car.html #}
-{% extends "main.html" %}
+{% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row mb-4">
-        <div class="col">
-            <h2>Редагувати автомобіль: {{ car.make }} {{ car.model }}</h2>
-        </div>
-        <div class="col text-end">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Назад до списку</a>
-        </div>
+
+<div class="row justify-content-center g-4 text-center mb-4">
+    <div class="d-flex flex-row align-items-center justify-content-center link-primary">
+        <svg class="link-icon" xmlns="http://www.w3.org/2000/svg" width="17" height="16" fill="currentColor"
+             viewBox="0 0 17 16">
+            <path fill="currentColor"
+                  d="M7.022 1.489a.75.75 0 0 1 1.1 1.022L3.72 7.25H15l.076.004a.75.75 0 0 1 0 1.492L15 8.75H3.72l4.401 4.74.05.059a.75.75 0 0 1-1.094 1.014l-.055-.053-5.572-6a.751.751 0 0 1 0-1.021l5.572-6Z"/>
+        </svg>
+        <a href="{{ url_for('index') }}">Повернутись до списку</a>
+    </div>
+    <h2>Редагувати автомобіль: {{ car.make }} {{ car.model }}</h2>
+</div>
+<hr/>
+<form method="POST" action="{{ url_for('edit_car', id=car.id) }}" class="row g-3">
+    <!-- Make -->
+    <div class="col-md-4">
+        <label for="make" class="form-label">Марка</label>
+        <input type="text" id="make" class="form-control" value="{{ car.make }}" disabled>
     </div>
 
-    <form method="POST" action="{{ url_for('update_car', id=car.id) }}" class="row g-3">
-        <!-- Make -->
-        <div class="col-md-4">
-            <label for="make" class="form-label">Марка</label>
-            <input type="text" id="make" class="form-control" value="{{ car.make }}" readonly>
-        </div>
+    <!-- Model -->
+    <div class="col-md-4">
+        <label for="model" class="form-label">Модель</label>
+        <input type="text" id="model" class="form-control" value="{{ car.model }}" disabled>
+    </div>
 
-        <!-- Model -->
-        <div class="col-md-4">
-            <label for="model" class="form-label">Модель</label>
-            <input type="text" id="model" class="form-control" value="{{ car.model }}" readonly>
-        </div>
+    <!-- Body Type -->
+    <div class="col-md-4">
+        <label for="body_type" class="form-label">Тип кузова</label>
+        <input type="text" id="body_type" class="form-control" value="{{ car.body_type }}" disabled>
+    </div>
 
-        <!-- Body Type -->
-        <div class="col-md-4">
-            <label for="body_type" class="form-label">Тип кузова</label>
-            <input type="text" id="body_type" class="form-control" value="{{ car.body_type }}" readonly>
-        </div>
+    <!-- Engine Type -->
+    <div class="col-md-4">
+        <label for="engine_type" class="form-label">Тип пального</label>
+        <input type="text" id="engine_type" class="form-control" value="{{ car.fuel_type | fuel_label }}" disabled>
+    </div>
 
-        <!-- Engine Type -->
-        <div class="col-md-4">
-            <label for="engine_type" class="form-label">Тип двигуна</label>
-            <input type="text" id="engine_type" class="form-control" value="{{ car.engine_type }}" readonly>
-        </div>
+    <!-- Transmission -->
+    <div class="col-md-4">
+        <label for="transmission" class="form-label">Коробка передач</label>
+        <input type="text" id="transmission" class="form-control" value="{{ car.transmission }}" disabled>
+    </div>
 
-        <!-- Transmission -->
-        <div class="col-md-4">
-            <label for="transmission" class="form-label">Коробка передач</label>
-            <input type="text" id="transmission" class="form-control" value="{{ car.transmission }}" readonly>
-        </div>
+    <!-- Drive -->
+    <div class="col-md-4">
+        <label for="drive" class="form-label">Привід</label>
+        <input type="text" id="drive" class="form-control" value="{{ car.drive }}" disabled>
+    </div>
 
-        <!-- Drive -->
-        <div class="col-md-4">
-            <label for="drive" class="form-label">Привід</label>
-            <input type="text" id="drive" class="form-control" value="{{ car.drive }}" readonly>
-        </div>
+    <!-- Mileage -->
+    <div class="col-md-4">
+        <label for="mileage" class="form-label">Пробіг (км)</label>
+        <input type="text" id="mileage" class="form-control" value="{{ car.mileage }}" disabled>
+    </div>
 
-        <!-- Mileage -->
-        <div class="col-md-4">
-            <label for="mileage" class="form-label">Пробіг (км)</label>
-            <input type="text" id="mileage" class="form-control" value="{{ car.mileage }}" readonly>
-        </div>
+    <!-- Source -->
+    <div class="col-md-4">
+        <label for="source" class="form-label">Джерело</label>
+        <input type="text" id="source" class="form-control" value="{{ car.source }}" disabled>
+    </div>
 
-        <!-- Country -->
-        <div class="col-md-4">
-            <label for="country" class="form-label">Країна</label>
-            <input type="text" id="country" class="form-control" value="{{ car.country }}" readonly>
-        </div>
+    <!-- Country -->
+    <div class="col-md-4">
+        <label for="country" class="form-label">Країна</label>
+        <input type="text" id="country" class="form-control" value="{{ car.country | country_name}}" disabled>
+    </div>
 
-        <!-- Link -->
-        <div class="col-md-8">
-            <label for="link" class="form-label">Посилання</label>
-            <input type="url" id="link" class="form-control" value="{{ car.link }}" readonly>
-        </div>
+    <!-- Link -->
+    <div class="col-md-12">
+        <label for="link" class="form-label">Посилання</label>
+        <input type="url" id="link" class="form-control" value="{{ car.link }}" disabled>
+    </div>
 
-        <!-- Source -->
-        <div class="col-md-4">
-            <label for="source" class="form-label">Джерело</label>
-            <input type="text" id="source" class="form-control" value="{{ car.source }}" readonly>
-        </div>
 
-        <!-- Editable fields -->
+    <!-- Editable fields -->
 
-        <!-- Year -->
-        <div class="col-md-3">
-            <label for="year" class="form-label">Рік</label>
-            <input type="number" id="year" name="year" class="form-control"
-                   value="{{ car.year }}" required>
-        </div>
+    <!-- Year -->
+    <div class="col-md-3">
+        <label for="year" class="form-label">Рік</label>
+        <input type="number" id="year" name="year" class="form-control"
+               value="{{ car.year }}" required>
+    </div>
 
-        <!-- Engine Volume -->
-        <div class="col-md-3">
-            <label for="engine_volume" class="form-label">Об'єм двигуна (см³)</label>
-            <input type="number" id="engine_volume" name="engine_volume" class="form-control"
-                   value="{{ car.engine_volume or '' }}" step="any" required>
-        </div>
+    <!-- Engine Volume -->
+    <div class="col-md-3">
+        <label for="engine_volume" class="form-label">Об'єм двигуна (см³)</label>
+        <input type="number" id="engine_volume" name="engine_volume" class="form-control"
+               value="{{ car.engine_volume or '' }}" step="any" {% if car.fuel_type=='electric' %}disabled{% endif %}>
+    </div>
 
-        <!-- Battery Capacity -->
-        <div class="col-md-3">
-            <label for="battery_capacity_kwh" class="form-label">Ємність батареї (кВт·год)</label>
-            <input type="number" id="battery_capacity_kwh" name="battery_capacity_kwh" class="form-control"
-                   value="{{ car.battery_capacity_kwh or '' }}" step="any" required>
-        </div>
+    <!-- Battery Capacity -->
+    <div class="col-md-3">
+        <label for="battery_capacity_kwh" class="form-label">Ємність батареї (кВт·год)</label>
+        <input type="number" id="battery_capacity_kwh" name="battery_capacity_kwh" class="form-control"
+               value="{{ car.battery_capacity_kwh or '' }}" step="any" {% if car.fuel_type !='electric' %}disabled{%
+               endif %}>
+    </div>
 
-        <!-- Price -->
-        <div class="col-md-3">
-            <label for="price" class="form-label">Ціна, €</label>
-            <input type="number" id="price" name="price" class="form-control"
-                   value="{{ car.price or '' }}" step="any" required>
-        </div>
+    <!-- Price -->
+    <div class="col-md-3">
+        <label for="price" class="form-label">Ціна, €</label>
+        <input type="number" id="price" name="price" class="form-control"
+               value="{{ car.price or '' }}" step="any">
+    </div>
 
-        <!-- Submit -->
-        <div class="col-12 text-end">
-            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
-        </div>
-    </form>
-</div>
+    <!-- Submit -->
+
+    <div class="col-12 text-end">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">Відмінити</a>
+        <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+    </div>
+</form>
 {% endblock %}

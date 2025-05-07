@@ -10,11 +10,13 @@ from app.utils.logger_config import logger
 from app.utils.ev_utils import find_battery_capacity
 
 
+
 class AutoScout24Parser:
     _BASE_URL = "https://www.autoscout24.com"
     brand, model, fregto, kmto, cy = None, None, None, None, None
+    saved_cars = 0
 
-    def __init__(self, make, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel):
+    def __init__(self, make, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel, pagesize=2):
         self.make = make
         self.model = model
         self.pricefrom = pricefrom
@@ -25,9 +27,11 @@ class AutoScout24Parser:
         self.kmto = kmto
         self.cy = cy
         self.fuel = fuel
+        self.saved_cars = 0
+        self.page_size = pagesize
 
-    @staticmethod
-    def _configure_url(self):
+
+    def _configure_url(self) -> tuple[dict[str, str | int], str]:
         params = {
             "sort": "standard",
             "desc": "0",
@@ -64,12 +68,9 @@ class AutoScout24Parser:
 
     def parse_autoscout24(self):
 
-        params, path = self._configure_url(self)
+        params, path = self._configure_url()
         page = 1
-        while True:
-            if page > 2:
-                break
-
+        while page <= self.page_size:
             params["page"] = str(page)
             query = "&".join([f"{k}={v}" for k, v in params.items()])
             url = self._BASE_URL + path + "?" + query
@@ -113,7 +114,10 @@ class AutoScout24Parser:
                         model_val = vehicle.get("model")
                         year_val = self._safe_int(self._parse_production_year(vehicle, detail_soup))
                         mileage_val = self._safe_int(vehicle.get("mileageInKmRaw"))
-                        fuel_val = vehicle.get("fuelCategory", {}).get("formatted").lower()
+                        fuel_val = vehicle.get("fuelCategory", {}).get("formatted")
+
+                        if fuel_val:
+                            fuel_val =  fuel_val.lower()
 
                         battery_capacity_kwh_val = None
                         if fuel_val == "electric":
@@ -165,13 +169,20 @@ class AutoScout24Parser:
                         "source": "AutoScout24"
                     }
 
-                    logger.debug(f"Збереження авто: {car_data}")
-                    CarService.add_car(car_data)
+                    logger.debug(f"Передаємо авто для збереження: {car_data}")
+                    is_car_added = CarService.add_car(car_data)
+
+                    if is_car_added:
+                        self.saved_cars += 1
 
                 except Exception as e:
                     logger.error(f"Помилка при обробці авто: {e}")
 
             page += 1
+
+        return {
+            'saved_cars': self.saved_cars
+        }
 
     @staticmethod
     def _parse_production_year(vehicle, detail_soup):
@@ -217,3 +228,6 @@ class AutoScout24Parser:
             return float(value)
         except (ValueError, TypeError):
             return None
+
+    def get_parsed_cars_count(self):
+        return self._searched_cars_count

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center g-4 text-center p-5 mt-4 mb-5 border border-primary rounded bg-light">
+    <h2>
+        Програмна система для пошуку та порівняння вживаних авто за
+        даними закордонних автомобільних сайтів
+    </h2>
+    <a href="{{ url_for('search') }}" class="btn btn-primary w-25">
+        Знайти автомобіль за кордоном
+    </a>
+</div>
+<div class="d-flex justify-content-between align-items-center">
+    <h4>Наявні автомобілі в системі</h4>
+    <p>Кількість авто: {{ cars|length }}</p>
+</div>
+
+<hr>
+<form id="searchForm" method="GET" class="row g-3 mb-4">
+    <!-- Бренд -->
+    <div class="col-md-3">
+        <label for="make" class="form-label">Марка</label>
+        <select class="form-select" id="make" name="make">
+            <option value="">Оберіть марку</option>
+            {% for make in makes %}
+            <option value="{{ make.make_id }}" {% if selected.make==make.make_id %}selected{% endif %}>
+                {{ make.make_display }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Модель -->
+    <div class="col-md-3">
+        <label for="model" class="form-label">Модель</label>
+        <select id="model" name="model" class="form-select" disabled data-selected="{{ selected.model or '' }}">
+            <option value="">Оберіть модель</option>
+        </select>
+    </div>
+
+    <!-- Тип палива -->
+    <div class="col-md-3">
+        <label for="fuel" class="form-label">Тип пального</label>
+        <select id="fuel" name="fuel" class="form-select">
+            <option value="">Усі типи</option>
+            {% for key, obj in fuel_types.items() %}
+            <option value="{{ key }}" {% if selected.fuel==key %}selected{% endif %}>
+                {{ obj.label }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Рік -->
+    <div class="col-md-3">
+        <label for="year" class="form-label">Рік виробництва</label>
+        <select id="year" name="year" class="form-select">
+            <option value="">Усі роки</option>
+            {% for y in years %}
+            <option value="{{ y }}" {% if selected.year==y|string %}selected{% endif %}>
+                {{ y }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Країна -->
+    <div class="col-md-3">
+        <label for="country" class="form-label">Країна</label>
+        <select id="country" name="country" class="form-select">
+            <option value="">Усі країни</option>
+            {% for code, name in country_names.items() %}
+            <option value="{{ code }}" {% if selected.country==code %}selected{% endif %}>
+                {{ name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Сортування -->
+    <div class="col-md-3">
+        <label for="sort" class="form-label">Сортування</label>
+        <select id="sort" name="sort" class="form-select">
+            <option value="newest" {% if selected.sort=='newest' %}selected{% endif %}>
+                Нові зверху
+            </option>
+            <option value="oldest" {% if selected.sort=='oldest' %}selected{% endif %}>
+                Старі зверху
+            </option>
+            <option value="price_asc" {% if selected.sort=='price_asc' %}selected{% endif %}>
+                Ціна ↑
+            </option>
+            <option value="price_desc" {% if selected.sort=='price_desc' %}selected{% endif %}>
+                Ціна ↓
+            </option>
+        </select>
+    </div>
+
+    <!-- Кнопка -->
+    <div class="col-md-3 align-self-end">
+        <button class="btn btn-outline-primary w-100">Застосувати</button>
+    </div>
+
+    <!-- Скинути всі -->
+    <div class="col-md-3 align-self-end">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary w-100">
+            Скинути всі
+        </a>
+    </div>
+</form>
+<hr>
+<div class="table-responsive table-responsive-lg">
+    <table class="table table-md mb-4" id="carsTable">
+        <thead>
+        <tr>
+            <th>Марка</th>
+            <th>Модель</th>
+            <th>Рік</th>
+            <th>Тип пального</th>
+            <th>Обʼєм двигуна</th>
+            <th>Ємність акум.</th>
+            <th>Країна</th>
+            <th class="text-end">Ціна, €</th>
+            <th class="text-end">Мито, грн</th>
+            <th class="text-end">Фінальна ціна, грн</th>
+            <th class="text-end">Дії</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for car in cars %}
+        <tr>
+            <td>{{ car.make or '—' }}</td>
+            <td>{{ car.model or '—' }}</td>
+            <td>{{ car.year or '—' }}</td>
+            <td>{{ car.fuel_type|fuel_label }}</td>
+            <td>
+                {% if car.engine_volume is not none %}
+                {{ car.engine_volume }} см³
+                {% else %}
+                -
+                {% endif %}
+                /
+                {% if car.engine_liters is not none %}
+                {{ car.engine_liters }} л
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td>
+                {% if car.battery_capacity_kwh is not none %}
+                {{ car.battery_capacity_kwh }} кВт-год
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td>{{ country_names.get(car.country) or car.country or '—' }}</td>
+            <td class="text-end">{{ car.price or '—' }}</td>
+            <td class="text-end">{{ car.customs_uah or '-' }}</td>
+            <td class="text-end">{{ car.final_price_uah or '-' }}</td>
+            <td class="text-end">
+                {% if not car.final_price_uah %}
+                <a href="{{ url_for('edit_car', id=car.id) }}"
+                   class="btn btn-sm btn-outline-primary "
+                   title="Редагувати">
+                    <i class="bi bi-pencil-fill"></i>
+                </a>
+                {% endif %}
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger me-1"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteModal"
+                        data-car-id="{{ car.id }}"
+                        title="Видалити">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+                {% if car.link %}
+                <a href="{{ car.link }}" target="_blank"
+                   class="btn btn-sm btn-primary"
+                   title="Перейти на сайт">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+                {% else %}
+                —
+                {% endif %}
+            </td>
+
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Підтвердіть видалення</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Закрити"></button>
+            </div>
+            <div class="modal-body">
+                Ви впевнені, що хочете видалити цей запис?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Скасувати</button>
+                <form id="deleteModalForm" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">Видалити</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
