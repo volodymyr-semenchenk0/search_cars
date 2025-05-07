@@ -2,8 +2,8 @@ from flask import render_template, request, redirect, url_for, jsonify
 
 from app.data.options import FUEL_TYPES, COUNTRY_NAMES, COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
 from app.parsers.autoscout24_parser import AutoScout24Parser
-from app.services.car_service import get_filtered_cars
-from app.utils.carquery_utils import get_all_makes, get_models_for_make
+from app.services.car_service import CarService
+from app.utils.car_models_utils import get_all_makes, get_models_for_make
 
 makes = get_all_makes()
 
@@ -19,7 +19,7 @@ def register_routes(app):
         fields = ("make", "model", "fuel", "year", "country", "sort")
         selected = {f: request.args.get(f) for f in fields}
 
-        cars = get_filtered_cars(**selected)
+        cars = CarService.list_cars(**selected)
 
         for car in cars:
             ev = car.get('engine_volume')

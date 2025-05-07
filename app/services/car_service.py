@@ -1,67 +1,70 @@
-from app.db import execute_query
+from app.repositories.car_repository import CarRepository
 
-from app.utils.logger_config import logger
+class NotFoundError(Exception):
+    """Виключення для не знайдених сутностей."""
+    pass
+
+class ServiceError(Exception):
+    """Виключення для загальних помилок сервісу."""
+    pass
+
+class CarService:
+    @staticmethod
+    def list_cars(
+            make: str = None,
+            model: str = None,
+            fuel: str = None,
+            year: int = None,
+            country: str = None,
+            sort: str = None
+    ) -> list:
+        try:
+            return CarRepository.get_filtered_cars(
+                make=make,
+                model=model,
+                fuel_type=fuel,
+                year=year,
+                country=country,
+                sort=sort
+            )
+        except Exception as e:
+            raise ServiceError(f"Error fetching filtered cars: {e}")
 
 
-def get_filtered_cars(
-        make=None, model=None, fuel=None,
-        year=None, country=None, sort=None
-):
-    # Базовий SELECT
-    query = """
-            SELECT identifier,
-                   make,
-                   model,
-                   year,
-                   fuel_type,
-                   engine_volume,
-                   battery_capacity_kwh,
-                   transmission,
-                   drive,
-                   mileage,
-                   country,
-                   price,
-                   customs_uah,
-                   final_price_uah,
-                   link,
-                   created_at
-            FROM cars \
-            """
-    where_clauses = []
-    params = []
+    @staticmethod
+    def get_car_details(car_id: int) -> dict:
+        car = CarRepository.get_car_by_id(car_id)
+        if not car:
+            raise NotFoundError(f"Car with id {car_id} not found")
+        return car
 
-    # Додаємо WHERE‐умови тільки якщо є параметр
-    if make:
-        where_clauses.append("make = %s")
-        params.append(make)
-    if model:
-        where_clauses.append("model = %s")
-        params.append(model)
-    if fuel:
-        where_clauses.append("fuel_type = %s")
-        params.append(fuel)
-    if year:
-        where_clauses.append("year = %s")
-        params.append(year)
-    if country:
-        where_clauses.append("country = %s")
-        params.append(country)
+    @staticmethod
+    def add_car(car_data: dict) -> bool:
+        try:
+            if not CarRepository.save_car(car_data):
+                raise ServiceError("Car already exists")
+            return True
+        except Exception as e:
+            raise ServiceError(f"Error adding car: {e}")
 
-    if where_clauses:
-        query += " WHERE " + " AND ".join(where_clauses)
+    @staticmethod
+    def update_car(car_id: int, update_data: dict) -> bool:
+        if not CarRepository.get_car_by_id(car_id):
+            raise NotFoundError(f"Car with id {car_id} not found")
+        try:
+            if not CarRepository.update_car(car_id, update_data):
+                raise ServiceError("Update failed")
+            return True
+        except Exception as e:
+            raise ServiceError(f"Error updating car: {e}")
 
-    # Сортування
-    if sort == 'price_asc':
-        query += " ORDER BY price ASC"
-    elif sort == 'price_desc':
-        query += " ORDER BY price DESC"
-    elif sort == 'oldest':
-        query += " ORDER BY created_at ASC"
-    else:  # default або 'latest'
-        query += " ORDER BY created_at DESC"
-
-    # Виконуємо і повертаємо список dict
-    rows = execute_query(query, tuple(params))
-    cars = [dict(row) for row in rows]
-    logger.debug(f"Filtered {len(cars)} cars with {params}")
-    return cars
+    @staticmethod
+    def remove_car(car_id: int) -> bool:
+        if not CarRepository.get_car_by_id(car_id):
+            raise NotFoundError(f"Car with id {car_id} not found")
+        try:
+            if not CarRepository.delete_car(car_id):
+                raise ServiceError("Deletion failed")
+            return True
+        except Exception as e:
+            raise ServiceError(f"Error deleting car: {e}")

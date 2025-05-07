@@ -103,14 +103,14 @@ class CalculateCustoms:
 
     def calculate(
             self,
-            customs_value_eur: float,
+            price_eur: float,
             engine_volume_cc: float,
             production_year: int,
             raw_fuel_type: str,
             battery_capacity_kwh: Optional[float] = None
     ) -> Optional[Dict[str, float]]:
 
-        if customs_value_eur is None or production_year is None:
+        if price_eur is None or production_year is None:
             return None
         if raw_fuel_type == 'electric':
             if battery_capacity_kwh is None:
@@ -119,7 +119,7 @@ class CalculateCustoms:
             if engine_volume_cc is None:
                 return None
 
-        customs_value_uah = customs_value_eur * self.eur_to_uah_rate
+        price_uah = price_eur * self.eur_to_uah_rate
         current_year = datetime.now().year
         age_years = max(1, min(current_year - production_year, 15))
         fuel_type = self._map_fuel_type(raw_fuel_type)
@@ -128,17 +128,19 @@ class CalculateCustoms:
             engine_volume_cc, age_years, fuel_type, battery_capacity_kwh
         )
         excise_uah = excise_eur * self.eur_to_uah_rate
-        duty = self._calculate_customs_duty(customs_value_uah, fuel_type)
-        vat = self._calculate_vat(customs_value_uah, duty, excise_uah, fuel_type)
-        pension = self._calculate_pension_fee(customs_value_uah)
-        total = customs_value_uah + duty + excise_uah + vat + pension
-        logger.debug(f"customs: {customs_value_eur}, volume: {engine_volume_cc}, capacity: {battery_capacity_kwh}")
+        duty = self._calculate_customs_duty(price_uah, fuel_type)
+        vat = self._calculate_vat(price_uah, duty, excise_uah, fuel_type)
+        pension = self._calculate_pension_fee(price_uah)
+        customs_uah = price_uah + duty + excise_uah
+        total = customs_uah + pension
+
         return {
-            "customs_value_uah": round(customs_value_uah, 2),
-            "duty_uah": round(duty, 2),
+            "price_uah": round(price_uah, 2),
+            "duty": round(duty, 2),
             "excise_eur": round(excise_eur, 2),
             "excise_uah": round(excise_uah, 2),
-            "vat_uah": round(vat, 2),
-            "pension_fee_uah": round(pension, 2),
-            "total_uah": round(total, 2)
+            "vat": round(vat, 2),
+            "pension_fee": round(pension, 2),
+            "customs": round(customs_uah, 2),
+            "total": round(total, 2)
         }

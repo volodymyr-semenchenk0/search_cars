@@ -1,65 +1,102 @@
 from app.db import execute_query, execute_modify
-from app.utils.logger_config import logger
 
 
-def _car_exists(identifier: str) -> bool:
-    rows = execute_query(
-        "SELECT 1 FROM cars WHERE identifier=%s LIMIT 1",
-        (identifier,)
-    )
-    return bool(rows)
+class CarRepository:
+    @staticmethod
+    def get_all_cars() -> list:
+        sql = ("SELECT id, make, model, year, body_type, fuel_type, "
+               + "engine_volume, battery_capacity_kwh, transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source "
+               + "FROM cars")
+        return execute_query(sql)
 
+    @staticmethod
+    def get_car_by_id(car_id: int) -> dict:
+        sql = ("SELECT id, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh, "
+               "transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source "
+               "FROM cars WHERE id = %s")
+        rows = execute_query(sql, (car_id,))
+        return rows[0] if rows else None
 
-def save_car_to_db(car_data: dict):
-    identifier = car_data.get("identifier")
+    @staticmethod
+    def car_exists(identifier: str) -> bool:
+        sql = "SELECT 1 FROM cars WHERE identifier = %s LIMIT 1"
+        rows = execute_query(sql, (identifier,))
+        return bool(rows)
 
-    if _car_exists(identifier):
-        logger.info(
-            f"Авто вже існує в базі: {car_data.get('make')}, "
-            f"{car_data.get('model')}, {car_data.get('year')}, {car_data.get('price')}"
+    @staticmethod
+    def save_car(car: dict) -> bool:
+
+        identifier = car.get("identifier")
+        if CarRepository.car_exists(identifier):
+            return False
+
+        sql = ("INSERT INTO cars (identifier, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh, "
+               "transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source) "
+               "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+        params = (
+            identifier, car.get("make"), car.get("model"), car.get("year"), car.get("body_type"),
+            car.get("fuel_type"), car.get("engine_volume"), car.get("battery_capacity_kwh"),
+            car.get("transmission"), car.get("drive"), car.get("mileage"), car.get("country"),
+            car.get("price"), car.get("customs_uah"), car.get("final_price_uah"),
+            car.get("link"), car.get("source")
         )
-        return
+        return execute_modify(sql, params) == 1
 
-    insert_query = (
-        "INSERT INTO cars (identifier, make, model, year, body_type, fuel_type, engine_volume, "
-        "battery_capacity_kwh, transmission, drive, mileage, country, price, customs_uah, "
-        "final_price_uah, link, source) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-    )
+    @staticmethod
+    def update_car(car_id: int, update_fields: dict) -> bool:
+        if not update_fields:
+            return False
+        set_clause = ", ".join(f"{key} = %s" for key in update_fields.keys())
+        params = list(update_fields.values()) + [car_id]
+        sql = f"UPDATE cars SET {set_clause} WHERE id = %s"
+        return execute_modify(sql, tuple(params)) == 1
 
-    params = (
-        identifier,
-        car_data.get("make"),
-        car_data.get("model"),
-        car_data.get("year"),
-        car_data.get("body_type"),
-        car_data.get("fuel_type"),
-        car_data.get("engine_volume"),
-        car_data.get("battery_capacity_kwh"),
-        car_data.get("transmission"),
-        car_data.get("drive"),
-        car_data.get("mileage"),
-        car_data.get("country"),
-        car_data.get("price"),
-        car_data.get("customs_uah"),
-        car_data.get("final_price_uah"),
-        car_data.get("link"),
-        car_data.get("source")
-    )
+    @staticmethod
+    def delete_car(car_id: int) -> bool:
+        sql = "DELETE FROM cars WHERE id = %s"
+        return execute_modify(sql, (car_id,)) == 1
 
-    try:
-        execute_modify(insert_query, params)
-    except Exception as e:
-        logger.error(f"Не вдалося зберегти авто: {e}")
-
-
-def get_all_cars() -> list[dict]:
-    """
-    Повертає всі автомобілі з бази у форматі list[dict].
-    """
-    query = (
-        "SELECT brand, model, year, fuel_type, engine_volume, country, "
-        "price, customs_uah, final_price_uah, link "
-        "FROM cars"
-    )
-    return execute_query(query)
+    @staticmethod
+    def get_filtered_cars(
+            make: str = None,
+            model: str = None,
+            fuel_type: str = None,
+            year: int = None,
+            country: str = None,
+            sort: str = None
+    ) -> list:
+        query = (
+            "SELECT id, make, model, year, body_type, fuel_type, engine_volume, "
+            "battery_capacity_kwh, transmission, drive, mileage, country, price, customs_uah, "
+            "final_price_uah, link, source, created_at "
+            "FROM cars"
+        )
+        where_clauses = []
+        params = []
+        if make:
+            where_clauses.append("make = %s")
+            params.append(make)
+        if model:
+            where_clauses.append("model = %s")
+            params.append(model)
+        if fuel_type:
+            where_clauses.append("fuel_type = %s")
+            params.append(fuel_type)
+        if year:
+            where_clauses.append("year = %s")
+            params.append(year)
+        if country:
+            where_clauses.append("country = %s")
+            params.append(country)
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
+        # Сортування
+        if sort == 'price_asc':
+            query += " ORDER BY price ASC"
+        elif sort == 'price_desc':
+            query += " ORDER BY price DESC"
+        elif sort == 'oldest':
+            query += " ORDER BY created_at ASC"
+        else:
+            query += " ORDER BY created_at DESC"
+        return execute_query(query, tuple(params))

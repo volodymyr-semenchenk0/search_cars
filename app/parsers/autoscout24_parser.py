@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from app.customs import CalculateCustoms
-from app.repositories.car_repository import save_car_to_db
+from app.services.car_service import CarService
 from app.utils.logger_config import logger
 from app.utils.ev_utils import find_battery_capacity
 
@@ -141,10 +141,9 @@ class AutoScout24Parser:
                         battery_capacity_kwh=battery_capacity_kwh_val,
                     )
 
-
                     if calc_customs is not None:
-                        customs_uah = calc_customs.get("customs_value_uah")
-                        final_price = calc_customs.get("total_uah")
+                        customs_uah = calc_customs.get("customs")
+                        final_price = calc_customs.get("total")
 
                     car_data = {
                         "identifier": identifier_val,
@@ -167,7 +166,7 @@ class AutoScout24Parser:
                     }
 
                     logger.debug(f"Збереження авто: {car_data}")
-                    save_car_to_db(car_data)
+                    CarService.add_car(car_data)
 
                 except Exception as e:
                     logger.error(f"Помилка при обробці авто: {e}")
