@@ -131,7 +131,7 @@ class CalculateCustoms:
         duty = self._calculate_customs_duty(price_uah, fuel_type)
         vat = self._calculate_vat(price_uah, duty, excise_uah, fuel_type)
         pension = self._calculate_pension_fee(price_uah)
-        total_without_pension = price_uah + duty + excise_uah
+        total_without_pension = price_uah + duty + excise_uah + vat
         total = total_without_pension + pension
 
         return {
