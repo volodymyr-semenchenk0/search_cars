@@ -8,7 +8,7 @@ from app.utils.logger_config import logger
 
 class CalculateCustoms:
     @staticmethod
-    def _get_eur_to_uah_rate() -> float:
+    def get_eur_to_uah_rate() -> float:
         try:
             response = requests.get(
                 "https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json"
@@ -42,7 +42,7 @@ class CalculateCustoms:
         raise ValueError(f"Тип палива '{raw}' не підтримується")
 
     def __init__(self):
-        self.eur_to_uah_rate = self._get_eur_to_uah_rate()
+        self.eur_to_uah_rate = self.get_eur_to_uah_rate()
         self.living_minimum = 3028
         self.duty_rate = 0.10
         self.vat_rate = 0.20
@@ -131,8 +131,8 @@ class CalculateCustoms:
         duty = self._calculate_customs_duty(price_uah, fuel_type)
         vat = self._calculate_vat(price_uah, duty, excise_uah, fuel_type)
         pension = self._calculate_pension_fee(price_uah)
-        customs_uah = price_uah + duty + excise_uah
-        total = customs_uah + pension
+        total_without_pension = price_uah + duty + excise_uah
+        total = total_without_pension + pension
 
         return {
             "price_uah": round(price_uah, 2),
@@ -141,6 +141,6 @@ class CalculateCustoms:
             "excise_uah": round(excise_uah, 2),
             "vat": round(vat, 2),
             "pension_fee": round(pension, 2),
-            "customs": round(customs_uah, 2),
+            "total_without_pension": round(total_without_pension, 2),
             "total": round(total, 2)
         }

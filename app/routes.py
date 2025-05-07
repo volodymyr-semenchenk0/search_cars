@@ -1,3 +1,5 @@
+import datetime
+
 from flask import render_template, request, redirect, url_for, jsonify, flash
 
 from app.customs import CalculateCustoms
@@ -147,43 +149,48 @@ def register_routes(app):
     @app.route('/duty_calc', methods=['GET', 'POST'])
     def duty_calc():
         result = None
-        # Параметри, які ми підставимо назад у форму
         params = {
+            'fuel_type': None,
             'price': None,
             'engine_volume': None,
-            'year': None,
-            'battery_capacity_kwh': None
+            'battery_capacity_kwh': None,
+            'year': None
         }
+
+        eur_rate = CalculateCustoms().get_eur_to_uah_rate()
 
         if request.method == 'POST':
             try:
-                # Зчитуємо значення
+                fuel_type = request.form.get('fuel_type') or None
                 price = float(request.form['price'])
-                engine_volume = float(request.form['engine_volume'])
+                engine_volume = float(request.form.get('engine_volume') or 0)
                 year = int(request.form['year'])
-                # Для електромобілів чи гібридів
-                battery_capacity_kwh = float(request.form.get('battery_capacity_kwh', 0) or 0)
-
+                battery_capacity_kwh = float(request.form.get('battery_capacity_kwh') or 0)
+            except (ValueError, KeyError):
+                flash('Будь ласка, введіть коректні значення.', 'danger')
+            else:
                 params.update({
+                    'fuel_type': fuel_type,
                     'price': price,
                     'engine_volume': engine_volume,
-                    'year': year,
-                    'battery_capacity_kwh': battery_capacity_kwh
+                    'battery_capacity_kwh': battery_capacity_kwh,
+                    'year': year
                 })
-                # Розрахунок
-                result = CalculateCustoms.calculate(
-                    price=price,
-                    engine_volume=engine_volume,
-                    year=year,
+                result = CalculateCustoms().calculate(
+                    price,
+                    engine_volume,
+                    year,
+                    fuel_type,
                     battery_capacity_kwh=battery_capacity_kwh
                 )
-            except (ValueError, KeyError) as e:
-                flash('Будь ласка, введіть коректні числові значення у всі поля.', 'danger')
 
         return render_template(
             'duty_calc.html',
             params=params,
-            result=result
+            result=result,
+            fuel_types=FUEL_TYPES,
+            years=get_years_list(),
+            eur_rate=eur_rate
         )
 
     @app.route("/api/models")

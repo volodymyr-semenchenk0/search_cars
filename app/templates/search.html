@@ -149,16 +149,29 @@
 
 {% if searched %}
 {% if saved_cars_count > 0 %}
-<div class="alert alert-info text-center p-4 mt-4">
+<div id="searchResultsInfo" class="alert alert-info text-center p-4 mt-4">
     <h4 class="mb-3">Успішно збережено {{ saved_cars_count }} авто.</h4>
     <a href="{{ url_for('index') }}" class="btn btn-secondary">Повернутись до списку авто</a>
 </div>
 {% else %}
-<div class="alert alert-warning text-center">
+<div class="alert alert-warning text-center p-4 mt-4">
     За вашим запитом нічого не знайдено.
 </div>
 {% endif %}
 {% endif %}
 
 <hr/>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const info = document.getElementById('searchResultsInfo');
+    if (info) {
+      window.history.replaceState(
+        null,
+        document.title,
+        window.location.pathname
+      );
+    }
+  });
+</script>
 {% endblock %}

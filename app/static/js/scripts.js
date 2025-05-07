@@ -41,6 +41,9 @@ $(function(){
     $('#searchForm').on('submit', function(){
         $('#loader').removeClass('d-none').addClass('d-flex');
     });
+    $('#dutyForm').on('submit', function(){
+        $('#loader').removeClass('d-none').addClass('d-flex');
+    });
     $(window).on('load', function(){
         $('#loader').removeClass('d-flex').addClass('d-none');
     });

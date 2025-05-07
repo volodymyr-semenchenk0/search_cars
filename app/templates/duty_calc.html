@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Калькулятор розмитнення{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4 text-center">Калькулятор розмитнення автомобіля</h2>
+
+    <!-- Форма і результат один під одним, по центру -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6">
+            {% include "loader.html" %}
+            <form method="POST" id="dutyForm" class="row g-3">
+                <!-- Тип пального -->
+                <div class="col-12">
+                    <label for="fuel_type" class="form-label">Тип пального</label>
+                    <select id="fuel_type" name="fuel_type" class="form-select" required>
+                        <option value="">Оберіть тип</option>
+                        {% for key, obj in fuel_types.items() %}
+                        <option value="{{ key }}" {% if params.fuel_type==key %}selected{% endif %}>{{ obj.label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Ціна авто (€) -->
+                <div class="col-12">
+                    <label for="price" class="form-label">Ціна, €</label>
+                    <input type="number" step="any" min="0" id="price" name="price"
+                           class="form-control"
+                           value="{{ params.price or '' }}" required>
+                </div>
+
+                <!-- Об'єм двигуна (см³) -->
+                <div class="col-12">
+                    <label for="engine_volume" class="form-label">Об'єм двигуна (см³)</label>
+                    <input type="number" step="any" min="0" id="engine_volume" name="engine_volume"
+                           class="form-control"
+                           value="{{ params.engine_volume or '' }}"
+                           {% if params.fuel_type=='electric' %}disabled{% endif %}>
+                </div>
+
+                <!-- Ємність батареї (кВт·год) -->
+                <div class="col-12">
+                    <label for="battery_capacity_kwh" class="form-label">Ємність батареї (кВт·год)</label>
+                    <input type="number" step="any" min="0" id="battery_capacity_kwh" name="battery_capacity_kwh"
+                           class="form-control"
+                           value="{{ params.battery_capacity_kwh or '' }}"
+                           {% if params.fuel_type!='electric' %}disabled{% endif %}>
+                </div>
+
+                <!-- Рік випуску -->
+                <div class="col-12">
+                    <label for="year" class="form-label">Рік випуску</label>
+                    <select id="year" name="year" class="form-select" required>
+                        <option value="">Оберіть рік</option>
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if params.year==y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 text-center mt-3">
+                    <button type="submit" class="btn btn-primary px-5">Розрахувати</button>
+                </div>
+            </form>
+
+            <!-- Результати під формою -->
+            <div class="mt-5">
+                <h4 class="mb-3 text-center">Результат розмитнення</h4>
+                <div class="text-center mb-4">
+                    <p>Курс НБУ: 1 € = {{ eur_rate|default('—') }} грн</p>
+                </div>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Акциз</span>
+                        <strong>{{ result.excise_uah|default(0)|round(2) }} грн</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Мито (10%)</span>
+                        <strong>{{ result.duty|default(0)|round(2) }} грн</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>ПДВ (20%)</span>
+                        <strong>{{ result.vat|default(0)|round(2) }} грн</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Пенсійний внесок</span>
+                        <strong>{{ result.pension_fee|default(0)|round(2) }} грн</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between bg-light">
+                        <span>Загальна сума без пенсійного внеску</span>
+                        <strong>{{ result.total_without_pension|default(0)|round(2) }} грн</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between bg-light">
+                        <span>Загальна сума</span>
+                        <strong>{{ result.total|default(0)|round(2) }} грн</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const fuelSelect = document.getElementById('fuel_type');
+    const engineInput = document.getElementById('engine_volume');
+    const batteryInput = document.getElementById('battery_capacity_kwh');
+
+    function toggleFields() {
+      if (fuelSelect.value === 'electric') {
+        engineInput.disabled = true;
+        batteryInput.disabled = false;
+      } else {
+        engineInput.disabled = false;
+        batteryInput.disabled = true;
+      }
+    }
+    toggleFields();
+    fuelSelect.addEventListener('change', toggleFields);
+
+    const form = document.getElementById('dutyForm');
+    if (document.querySelector('.list-group')) {
+      window.history.replaceState(null, '', window.location.pathname);
+      setTimeout(() => form.reset(), 100);
+    }
+  });
+</script>
+{% endblock %}
