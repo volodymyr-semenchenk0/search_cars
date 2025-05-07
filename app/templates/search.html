@@ -140,6 +140,14 @@
                 {% endfor %}
             </select>
         </div>
+
+        <div class="col-mpt-4">
+            <input class="form-check-input" type="checkbox" id="autoRefreshToggle">
+            <label class="form-check-label" for="autoRefreshToggle">
+                Автоматичне оновлення результатів
+            </label>
+        </div>
+
         <!-- Кнопка -->
         <div class="col-md-3 align-self-end">
             <button id="searchBtn" type="submit" class="btn btn-primary w-100">Пошук на AutoScout24</button>
@@ -148,5 +156,38 @@
 
 </div>
 <script src="{{ url_for('static', filename='js/car_select.js') }}" defer></script>
+<script>
+  let refreshInterval = null;
+
+  $(document).ready(function() {
+    const autoRefresh = localStorage.getItem('autoRefresh') === 'true';
+    $('#autoRefreshToggle').prop('checked', autoRefresh);
+    if (autoRefresh) startAutoRefresh();
+
+    $('#autoRefreshToggle').on('change', function() {
+      const enabled = $(this).is(':checked');
+      localStorage.setItem('autoRefresh', enabled);
+      if (enabled) {
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh();
+      }
+    });
+  });
+
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    refreshInterval = setInterval(() => {
+      $('#searchForm').submit();
+    }, 300000); // 5 хв
+  }
+
+  function stopAutoRefresh() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+  }
+</script>
 </body>
 </html>
