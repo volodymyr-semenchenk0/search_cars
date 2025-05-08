@@ -68,3 +68,11 @@ class CarService:
             return True
         except Exception as e:
             raise ServiceError(f"Error deleting car: {e}")
+
+    @staticmethod
+    def get_car(car_id: int) -> dict:
+        return CarRepository.get_car_by_id(car_id)
+
+    @staticmethod
+    def get_cars_for_comparison(ids: list[int]) -> list[dict]:
+        return CarRepository.get_cars_by_ids(ids)

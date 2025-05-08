@@ -100,3 +100,14 @@ class CarRepository:
         else:
             query += " ORDER BY created_at DESC"
         return execute_query(query, tuple(params))
+
+    @staticmethod
+    def get_cars_by_ids(car_ids: list[int]) -> list[dict]:
+        if not car_ids:
+            return []
+        placeholders = ','.join(['%s'] * len(car_ids))
+        sql = ("SELECT id, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh,"
+               " transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source"
+               f" FROM cars WHERE id IN ({placeholders})")
+        rows = execute_query(sql, tuple(car_ids))
+        return rows

@@ -5,6 +5,7 @@ from flask import render_template, request, redirect, url_for, jsonify, flash
 from app.customs import CalculateCustoms
 from app.data.options import FUEL_TYPES, COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
 from app.parsers.autoscout24_parser import AutoScout24Parser
+from app.repositories.car_repository import CarRepository
 from app.services.car_service import CarService, NotFoundError, ServiceError
 from app.utils.car_models_utils import get_all_makes, get_models_for_make
 from app.utils.logger_config import logger
@@ -13,21 +14,25 @@ makes = get_all_makes()
 
 
 def register_routes(app):
-    @app.route("/", methods=["GET"])
+    @app.route('/')
     def index():
         raw_args = request.args.to_dict()
         clean_args = {k: v for k, v in raw_args.items() if v}
         if raw_args and raw_args != clean_args:
             return redirect(url_for('index', **clean_args))
 
+        # Парсимо фільтри
         fields = ("make", "model", "fuel", "year", "country", "sort")
         selected = {f: request.args.get(f) for f in fields}
 
-        cars = CarService.list_cars(**selected)
+        # Парсимо ids для збереження вибраних авто
+        ids_param = request.args.get('ids', '')
+        try:
+            selected_ids = [int(i) for i in ids_param.split(',') if i]
+        except ValueError:
+            selected_ids = []
 
-        for car in cars:
-            ev = car.get('engine_volume')
-            car['engine_liters'] = round(float(ev) / 1000, 1) if ev else None
+        cars = CarService.list_cars(**selected)
 
         return render_template(
             'data_table.html',
@@ -37,7 +42,8 @@ def register_routes(app):
             fuel_types=FUEL_TYPES,
             price_options=PRICE_OPTIONS,
             mileage_options=MILEAGE_OPTIONS,
-            selected=selected
+            selected=selected,
+            selected_ids=selected_ids
         )
 
     @app.route("/search", methods=['GET', 'POST'])
@@ -193,6 +199,17 @@ def register_routes(app):
             eur_rate=eur_rate
         )
 
+    @app.route('/compare')
+    def compare_cars():
+        ids_param = request.args.get('ids', '')
+        try:
+            ids = [int(i) for i in ids_param.split(',') if i]
+        except ValueError:
+            ids = []
+        cars = CarService.get_cars_for_comparison(ids)
+        # Передаємо ids_param назад для відновлення вибору при поверненні
+        return render_template('compare.html', cars=cars, ids_param=ids_param)
+
     @app.route("/api/models")
     def api_models():
         make = request.args.get("make")
@@ -200,3 +217,4 @@ def register_routes(app):
             return jsonify([])
         models = get_models_for_make(make)
         return jsonify(models)
+

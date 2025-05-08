@@ -109,10 +109,15 @@
     </div>
 </form>
 <hr>
+<form id="compareForm" class="mb-3">
+    <button type="button" id="compareBtn" class="btn btn-primary" disabled>Порівняти</button>
+    <button type="button" id="resetBtn" class="btn btn-secondary ms-2">Скинути</button>
+</form>
 <div class="table-responsive table-responsive-lg">
     <table class="table table-md mb-4" id="carsTable">
         <thead>
         <tr>
+            <th>&nbsp;</th>
             <th>Марка</th>
             <th>Модель</th>
             <th>Рік</th>
@@ -129,6 +134,10 @@
         <tbody>
         {% for car in cars %}
         <tr>
+            <td>
+                <input type="checkbox" class="form-check-input compare-checkbox" value="{{ car.id }}"
+                       {% if car.id in selected_ids %}checked{% endif %}>
+            </td>
             <td>{{ car.make or '—' }}</td>
             <td>{{ car.model or '—' }}</td>
             <td>{{ car.year or '—' }}</td>
@@ -136,12 +145,6 @@
             <td>
                 {% if car.engine_volume is not none %}
                 {{ car.engine_volume }} см³
-                {% else %}
-                -
-                {% endif %}
-                /
-                {% if car.engine_liters is not none %}
-                {{ car.engine_liters }} л
                 {% else %}
                 -
                 {% endif %}

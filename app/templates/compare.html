@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center p-4">
+    <h3>Порівняння обраних автомобілів</h3>
+    <a href="{{ url_for('index') }}{% if ids_param %}?ids={{ ids_param }}{% endif %}" class="btn btn-secondary mb-3">Повернутись до списку</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>Марка</th>
+            <th>Модель</th>
+            <th>Рік</th>
+            <th>Тип пального</th>
+            <th>Обʼєм двигуна</th>
+            <th>Ємність акум.</th>
+            <th>Країна</th>
+            <th class="text-end">Ціна, €</th>
+            <th class="text-end">Мито, грн</th>
+            <th class="text-end">Фінальна ціна, грн</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for car in cars %}
+        <tr>
+            <td>{{ car.make or '—' }}</td>
+            <td>{{ car.model or '—' }}</td>
+            <td>{{ car.year or '—' }}</td>
+            <td>{{ car.fuel_type|fuel_label }}</td>
+            <td>{{ car.engine_volume or '-' }}</td>
+            <td>{{ car.battery_capacity_kwh or '-' }}</td>
+            <td>{{ country_names.get(car.country) or car.country or '—' }}</td>
+            <td class="text-end">{{ car.price or '—' }}</td>
+            <td class="text-end">{{ car.customs_uah or '-' }}</td>
+            <td class="text-end">{{ car.final_price_uah or '-' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
