@@ -25,7 +25,7 @@ class CalculateCustoms:
     @staticmethod
     def _map_fuel_type(raw: str) -> str:
 
-        s = raw.strip()
+        s = raw.strip().lower()
 
         if 'hybrid' in s or 'electric/gasoline' in s or 'electric/diesel' in s:
             return 'hybrid'

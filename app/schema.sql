@@ -1,6 +1,7 @@
 
 CREATE TABLE IF NOT EXISTS cars (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    identifier VARCHAR(100),
     make VARCHAR(100),
     model VARCHAR(100),
     year INT,
@@ -19,3 +20,4 @@ CREATE TABLE IF NOT EXISTS cars (
     battery_capacity_kwh FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+x
