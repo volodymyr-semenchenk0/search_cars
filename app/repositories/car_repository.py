@@ -5,14 +5,14 @@ class CarRepository:
     @staticmethod
     def get_all_cars() -> list:
         sql = ("SELECT id, make, model, year, body_type, fuel_type, "
-               + "engine_volume, battery_capacity_kwh, transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source "
+               + "engine_volume, battery_capacity_kwh, transmission, drive, mileage, country, price, customs, final_price_uah, link, source "
                + "FROM cars")
         return execute_query(sql)
 
     @staticmethod
     def get_car_by_id(car_id: int) -> dict:
         sql = ("SELECT id, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh, "
-               "transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source "
+               "transmission, drive, mileage, country, price, customs, final_price_uah, link, source "
                "FROM cars WHERE id = %s")
         rows = execute_query(sql, (car_id,))
         return rows[0] if rows else None
@@ -30,14 +30,15 @@ class CarRepository:
         if CarRepository.car_exists(identifier):
             return False
 
-        sql = ("INSERT INTO cars (identifier, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh, "
-               "transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source) "
-               "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
+        sql = (
+            "INSERT INTO cars (identifier, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh, "
+            "transmission, drive, mileage, country, price, customs, final_price_uah, link, source) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
         params = (
             identifier, car.get("make"), car.get("model"), car.get("year"), car.get("body_type"),
             car.get("fuel_type"), car.get("engine_volume"), car.get("battery_capacity_kwh"),
             car.get("transmission"), car.get("drive"), car.get("mileage"), car.get("country"),
-            car.get("price"), car.get("customs_uah"), car.get("final_price_uah"),
+            car.get("price"), car.get("customs"), car.get("final_price_uah"),
             car.get("link"), car.get("source")
         )
         return execute_modify(sql, params) == 1
@@ -67,7 +68,7 @@ class CarRepository:
     ) -> list:
         query = (
             "SELECT id, make, model, year, body_type, fuel_type, engine_volume, "
-            "battery_capacity_kwh, transmission, drive, mileage, country, price, customs_uah, "
+            "battery_capacity_kwh, transmission, drive, mileage, country, price, customs, "
             "final_price_uah, link, source, created_at "
             "FROM cars"
         )
@@ -107,7 +108,7 @@ class CarRepository:
             return []
         placeholders = ','.join(['%s'] * len(car_ids))
         sql = ("SELECT id, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh,"
-               " transmission, drive, mileage, country, price, customs_uah, final_price_uah, link, source"
+               " transmission, drive, mileage, country, price, customs, final_price_uah, link, source"
                f" FROM cars WHERE id IN ({placeholders})")
         rows = execute_query(sql, tuple(car_ids))
         return rows

@@ -126,8 +126,8 @@
             <th>Ємність акум.</th>
             <th>Країна</th>
             <th class="text-end">Ціна, €</th>
-            <th class="text-end">Мито, грн</th>
-            <th class="text-end">Фінальна ціна, грн</th>
+            <th class="text-end">Сума мит. платежів, €</th>
+            <th class="text-end">Фінальна ціна, €</th>
             <th class="text-end">Дії</th>
         </tr>
         </thead>
@@ -158,7 +158,7 @@
             </td>
             <td>{{ country_names.get(car.country) or car.country or '—' }}</td>
             <td class="text-end">{{ car.price or '—' }}</td>
-            <td class="text-end">{{ car.customs_uah or '-' }}</td>
+            <td class="text-end">{{ car.customs or '-' }}</td>
             <td class="text-end">{{ car.final_price_uah or '-' }}</td>
             <td class="text-end">
                 {% if not car.final_price_uah %}

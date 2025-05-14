@@ -66,11 +66,11 @@ FUEL_TYPES = {
         "code": "L"
     },
     "ethanol": {
-        "label": "Газ (Етанол)",
+        "label": "Етанол",
         "code": "M"
     },
     "cng": {
-        "label": "Газ (Метанол)",
+        "label": "CNG/Метан",
         "code": "C"
     },
     "hydrogen": {

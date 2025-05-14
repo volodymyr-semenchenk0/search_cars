@@ -9,9 +9,9 @@
         <div class="col-12 col-md-6">
             {% include "loader.html" %}
             <form method="POST" id="dutyForm" class="row g-3">
-                <!-- Тип пального -->
+                <!-- Тип двигуна -->
                 <div class="col-12">
-                    <label for="fuel_type" class="form-label">Тип пального</label>
+                    <label for="fuel_type" class="form-label">Тип двигуна</label>
                     <select id="fuel_type" name="fuel_type" class="form-select" required>
                         <option value="">Оберіть тип</option>
                         {% for key, obj in fuel_types.items() %}
@@ -67,36 +67,40 @@
             <div class="mt-5">
                 <h4 class="mb-3 text-center">Результат розмитнення</h4>
                 <div class="text-center mb-4">
-                    <p>Курс НБУ: 1 € = {{ eur_rate|default('—') }} грн</p>
+                    <p>Курс НБУ: 1 € = {{ eur_rate|default('—') }} ₴</p>
                 </div>
                 <ul class="list-group">
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Акциз</span>
-                        <strong>{{ result.excise_uah|default(0)|round(2) }} грн</strong>
+                        <span>Вартість авто</span>
+                        <strong>{{ result.price_uah|default(0) }} ₴</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                         <span>Мито (10%)</span>
-                        <strong>{{ result.duty|default(0)|round(2) }} грн</strong>
+                        <strong>{{ result.duty_uah|default(0) }} ₴</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Акцизний податок</span>
+                        <strong>{{ result.excise_uah|default(0) }} ₴</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                         <span>ПДВ (20%)</span>
-                        <strong>{{ result.vat|default(0)|round(2) }} грн</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Пенсійний внесок</span>
-                        <strong>{{ result.pension_fee|default(0)|round(2) }} грн</strong>
+                        <strong>{{ result.vat_uah|default(0) }} ₴</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between bg-light">
                         <span>Загальна сума митних платежів</span>
-                        <strong>{{ result.customs|default(0)|round(2) }} грн</strong>
+                        <strong>{{ result.customs_payments_total_uah|default(0) }} ₴</strong>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between bg-light">
-                        <span>Загальна сума + вартість авто</span>
-                        <strong>{{ result.total_without_pension|default(0)|round(2) }} грн</strong>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Загальна вартість до пенсійного внеску</span>
+                        <strong>{{ result.final_total_without_pension|default(0) }} ₴</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Пенсійний внесок</span>
+                        <strong>{{ result.pension_fee_uah|default(0) }} ₴</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between bg-light">
                         <span>Загальна вартість</span>
-                        <strong>{{ result.total|default(0)|round(2) }} грн</strong>
+                        <strong>{{ result.final_total|default(0) }} ₴</strong>
                     </li>
                 </ul>
             </div>

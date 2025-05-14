@@ -5,10 +5,10 @@ from flask import render_template, request, redirect, url_for, jsonify, flash
 from app.customs import CalculateCustoms
 from app.data.options import FUEL_TYPES, COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
 from app.parsers.autoscout24_parser import AutoScout24Parser
-from app.repositories.car_repository import CarRepository
 from app.services.car_service import CarService, NotFoundError, ServiceError
 from app.utils.car_models_utils import get_all_makes, get_models_for_make
 from app.utils.logger_config import logger
+from app.utils.rate import get_eur_to_uah_rate
 
 makes = get_all_makes()
 
@@ -163,7 +163,7 @@ def register_routes(app):
             'year': None
         }
 
-        eur_rate = CalculateCustoms().get_eur_to_uah_rate()
+        eur_rate = get_eur_to_uah_rate()
 
         if request.method == 'POST':
             try:

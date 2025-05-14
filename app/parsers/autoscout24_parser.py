@@ -136,7 +136,7 @@ class AutoScout24Parser:
                         logger.error("Неможливо обробити JSON структуру:", e)
                         continue
 
-                    customs_uah, final_price = None, None
+                    customs, final_price = None, None
                     calc_customs = CalculateCustoms().calculate(
                         price_val,
                         engine_volume,
@@ -146,8 +146,8 @@ class AutoScout24Parser:
                     )
 
                     if calc_customs is not None:
-                        customs_uah = calc_customs.get("customs")
-                        final_price = calc_customs.get("total")
+                        customs = calc_customs.get("customs_payments_total_uah")
+                        final_price = calc_customs.get("final_total")
 
                     car_data = {
                         "identifier": identifier_val,
@@ -163,7 +163,7 @@ class AutoScout24Parser:
                         "mileage": mileage_val,
                         "country": country_val,
                         "price": price_val,
-                        "customs_uah": customs_uah,
+                        "customs": customs,
                         "final_price_uah": final_price,
                         "link": detail_url,
                         "source": "AutoScout24"
