@@ -124,14 +124,15 @@ class CalculateCustoms:
         age_years = max(1, min(current_year - production_year, 15))
         fuel_type = self._map_fuel_type(raw_fuel_type)
 
-        excise_eur = CalculateCustoms._calculate_excise(
+        excise_eur = self._calculate_excise(
             engine_volume_cc, age_years, fuel_type, battery_capacity_kwh
         )
         excise_uah = excise_eur * self.eur_to_uah_rate
         duty = self._calculate_customs_duty(price_uah, fuel_type)
         vat = self._calculate_vat(price_uah, duty, excise_uah, fuel_type)
         pension = self._calculate_pension_fee(price_uah)
-        total_without_pension = price_uah + duty + excise_uah + vat
+        customs =  duty + excise_uah + vat
+        total_without_pension = price_uah + customs
         total = total_without_pension + pension
 
         return {
@@ -141,6 +142,7 @@ class CalculateCustoms:
             "excise_uah": round(excise_uah, 2),
             "vat": round(vat, 2),
             "pension_fee": round(pension, 2),
+            "customs": round(customs, 2),
             "total_without_pension": round(total_without_pension, 2),
             "total": round(total, 2)
         }

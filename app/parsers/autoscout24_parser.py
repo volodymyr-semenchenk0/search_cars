@@ -16,7 +16,7 @@ class AutoScout24Parser:
     brand, model, fregto, kmto, cy = None, None, None, None, None
     saved_cars = 0
 
-    def __init__(self, make, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel, pagesize=2):
+    def __init__(self, make, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel, page_count=2):
         self.make = make
         self.model = model
         self.pricefrom = pricefrom
@@ -28,7 +28,7 @@ class AutoScout24Parser:
         self.cy = cy
         self.fuel = fuel
         self.saved_cars = 0
-        self.page_size = pagesize
+        self.page_count = page_count
 
 
     def _configure_url(self) -> tuple[dict[str, str | int], str]:
@@ -70,7 +70,7 @@ class AutoScout24Parser:
 
         params, path = self._configure_url()
         page = 1
-        while page <= self.page_size:
+        while page <= self.page_count:
             params["page"] = str(page)
             query = "&".join([f"{k}={v}" for k, v in params.items()])
             url = self._BASE_URL + path + "?" + query

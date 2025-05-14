@@ -20,4 +20,3 @@ CREATE TABLE IF NOT EXISTS cars (
     battery_capacity_kwh FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-x

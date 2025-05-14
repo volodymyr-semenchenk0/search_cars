@@ -87,11 +87,15 @@
                         <strong>{{ result.pension_fee|default(0)|round(2) }} грн</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between bg-light">
-                        <span>Загальна сума без пенсійного внеску</span>
+                        <span>Загальна сума митних платежів</span>
+                        <strong>{{ result.customs|default(0)|round(2) }} грн</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between bg-light">
+                        <span>Загальна сума + вартість авто</span>
                         <strong>{{ result.total_without_pension|default(0)|round(2) }} грн</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between bg-light">
-                        <span>Загальна сума</span>
+                        <span>Загальна вартість</span>
                         <strong>{{ result.total|default(0)|round(2) }} грн</strong>
                     </li>
                 </ul>
