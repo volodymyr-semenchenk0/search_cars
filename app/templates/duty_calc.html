@@ -23,7 +23,7 @@
 
                 <!-- Ціна авто (€) -->
                 <div class="col-12">
-                    <label for="price" class="form-label">Ціна, €</label>
+                    <label for="price" class="form-label">Вартість, €</label>
                     <input type="number" step="any" min="0" id="price" name="price"
                            class="form-control"
                            value="{{ params.price or '' }}" required>
@@ -42,6 +42,7 @@
                 <div class="col-12">
                     <label for="battery_capacity_kwh" class="form-label">Ємність батареї (кВт·год)</label>
                     <input type="number" step="any" min="0" id="battery_capacity_kwh" name="battery_capacity_kwh"
+                           class="form-control"
                            class="form-control"
                            value="{{ params.battery_capacity_kwh or '' }}"
                            {% if params.fuel_type!='electric' %}disabled{% endif %}>
@@ -71,7 +72,7 @@
                 </div>
                 <ul class="list-group">
                     <li class="list-group-item d-flex justify-content-between">
-                        <span>Вартість авто</span>
+                        <span>Вартість авто в гривні</span>
                         <strong>{{ result.price_uah|default(0) }} ₴</strong>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">

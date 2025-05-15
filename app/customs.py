@@ -51,7 +51,7 @@ class CalculateCustoms:
         if ft == "electric":
             if battery_capacity_kwh is None:
                 raise ValueError("Потрібно вказати battery_capacity_kwh для електрокара")
-            return battery_capacity_kwh * 1.0
+            return round(battery_capacity_kwh) * 1.0
 
         volume_l = engine_volume_cc / 1000
 
@@ -117,7 +117,7 @@ class CalculateCustoms:
         pension_fee_uah = round(self._calculate_pension_fee(price_uah), 2)
 
         customs_payments_total_uah = round(duty_uah + excise_uah + vat_uah, 2)
-        final_total_without_pension = round(customs_payments_total_uah + excise_uah, 2)
+        final_total_without_pension = round(customs_payments_total_uah + price_uah, 2)
         final_total = round(final_total_without_pension + pension_fee_uah, 2)
 
         return {
