@@ -1,5 +1,6 @@
 from app.db import execute_query, execute_modify
-
+from app.repositories.source_repository import SourceRepository
+from app.utils.logger_config import logger
 
 class CarRepository:
     @staticmethod
@@ -25,23 +26,48 @@ class CarRepository:
 
     @staticmethod
     def save_car(car: dict) -> bool:
-
         identifier = car.get("identifier")
         if CarRepository.car_exists(identifier):
+            logger.info(f"Car with identifier '{identifier}' already exists. Skipping save.")
             return False
 
+        source_id = car.get("source_id")
+
         sql = (
-            "INSERT INTO cars (identifier, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh, "
-            "transmission, drive, mileage, country, price, customs, final_price_uah, link, source) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)")
-        params = (
-            identifier, car.get("make"), car.get("model"), car.get("year"), car.get("body_type"),
-            car.get("fuel_type"), car.get("engine_volume"), car.get("battery_capacity_kwh"),
-            car.get("transmission"), car.get("drive"), car.get("mileage"), car.get("country"),
-            car.get("price"), car.get("customs"), car.get("final_price_uah"),
-            car.get("link"), car.get("source")
+            "INSERT INTO cars (identifier, make, model, year, body_type, fuel_type, "
+            "engine_volume, battery_capacity_kwh, transmission, drive, mileage, country, "
+            "price, customs, final_price_uah, link, source_id) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         )
-        return execute_modify(sql, params) == 1
+
+
+        params = (
+            identifier,
+            car.get("make"),
+            car.get("model"),
+            car.get("year"),
+            car.get("body_type"),
+            car.get("fuel_type"),
+            car.get("engine_volume"),
+            car.get("battery_capacity_kwh"),
+            car.get("transmission"),
+            car.get("drive"),
+            car.get("mileage"),
+            car.get("country"),
+            car.get("price"),
+            car.get("customs"),
+            car.get("final_price_uah"),
+            car.get("link"),
+            source_id
+        )
+
+        try:
+            rows_affected = execute_modify(sql, params)
+            return rows_affected == 1
+        except Exception as e:
+            logger.error(f"Error saving car with identifier '{identifier}' to database: {e}")
+            return False
+
 
     @staticmethod
     def update_car(car_id: int, update_fields: dict) -> bool:

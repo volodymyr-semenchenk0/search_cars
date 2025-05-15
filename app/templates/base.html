@@ -16,7 +16,7 @@
 <body class="bg-white">
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+        <a class="navbar-brand fw-bold" href="{{ url_for('main.index') }}">
             АвтоПортал
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -28,19 +28,19 @@
             <ul class="navbar-nav ms-auto align-items-lg-center">
                 <li class="nav-item mx-2">
                     <a class="nav-link {% if request.endpoint=='search' %}active{% endif %}"
-                       href="{{ url_for('search') }}">
+                       href="{{ url_for('main.search') }}">
                         Пошук
                     </a>
                 </li>
                 <li class="nav-item mx-2">
                     <a class="nav-link {% if request.endpoint=='index' %}active{% endif %}"
-                       href="{{ url_for('index') }}">
+                       href="{{ url_for('main.index') }}">
                         Список авто
                     </a>
                 </li>
                 <li class="nav-item mx-2">
                     <a class="nav-link {% if request.endpoint=='duty_calc' %}active{% endif %}"
-                       href="{{ url_for('duty_calc') }}">
+                       href="{{ url_for('main.duty_calc') }}">
                         Калькулятор розмитнення
                     </a>
                 </li>
@@ -53,6 +53,18 @@
     {% block content %}
     {% endblock %}
 </main>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3"> {# Або інше місце для відображення #}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
 
 <footer class="bg-light py-3 mt-auto">
     <div class="container text-center">

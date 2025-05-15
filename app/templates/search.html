@@ -9,16 +9,26 @@
             <path fill="currentColor"
                   d="M7.022 1.489a.75.75 0 0 1 1.1 1.022L3.72 7.25H15l.076.004a.75.75 0 0 1 0 1.492L15 8.75H3.72l4.401 4.74.05.059a.75.75 0 0 1-1.094 1.014l-.055-.053-5.572-6a.751.751 0 0 1 0-1.021l5.572-6Z"/>
         </svg>
-        <a href="{{ url_for('index') }}">Повернутись до списку</a>
+        <a href="{{ url_for('main.index') }}">Повернутись до списку</a>
     </div>
     <h2 class="mb-4">Форма для пошуку авто на закордонних сайтах</h2>
+
 </div>
 
 <hr/>
 
 {% include "loader.html" %}
-<form id="searchForm" method="POST" action="{{ url_for('search') }}" class="row g-3">
-
+<form id="searchForm" method="POST" action="{{ url_for('main.search') }}" class="row g-3">
+    <div class="col-md-3">
+        <label for="source" class="form-label">Джерело</label>
+        <select class="form-select" id="source" name="source">
+            {% for src in sources %}
+            <option value="{{ src.id }}" {% if src.id==1 %}selected{% endif %}>
+                {{ src.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
     <!-- Бренд -->
     <div class="col-md-3">
         <label for="make" class="form-label">Марка</label>

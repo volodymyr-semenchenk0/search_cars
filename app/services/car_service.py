@@ -1,11 +1,9 @@
 from app.repositories.car_repository import CarRepository
 
 class NotFoundError(Exception):
-    """Виключення для не знайдених сутностей."""
     pass
 
 class ServiceError(Exception):
-    """Виключення для загальних помилок сервісу."""
     pass
 
 class CarService:
