@@ -1,6 +1,9 @@
-import requests
 import time
+
+import requests
+
 from app.db import get_db_connection  # Імпортуй функцію підключення
+
 
 def fetch_all_makes():
     url = "https://www.carqueryapi.com/api/0.3/"
@@ -13,6 +16,7 @@ def fetch_all_makes():
     data = resp.json()
     return data.get('Makes', [])
 
+
 def fetch_models_for_make(make_id):
     url = "https://www.carqueryapi.com/api/0.3/"
     params = {"cmd": "getModels", "make": make_id}
@@ -20,9 +24,10 @@ def fetch_models_for_make(make_id):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         "Accept": "application/json"
     }
-    resp = requests.get(url, params=params, headers=headers, timeout=10)
+    resp = requests.get(url, params=params, headers=headers, timeout=30)
     data = resp.json()
     return data.get('Models', [])
+
 
 def save_make(conn, make):
     c = conn.cursor()
@@ -35,6 +40,7 @@ def save_make(conn, make):
     row = c.fetchone()
     c.close()
     return row[0] if row else None
+
 
 def save_model(conn, model, make_db_id):
     c = conn.cursor()
@@ -49,10 +55,11 @@ def save_model(conn, model, make_db_id):
     finally:
         c.close()
 
+
 def main():
     makes = fetch_all_makes()
     print(f"Знайдено марок: {len(makes)}")
-    conn = get_db_connection()   # Підключення через твій db.py!
+    conn = get_db_connection()  # Підключення через твій db.py!
     try:
         for make in makes:
             make_db_id = save_make(conn, make)
@@ -66,6 +73,7 @@ def main():
             time.sleep(0.5)
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     main()

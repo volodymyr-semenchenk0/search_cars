@@ -1,140 +1,97 @@
-from app.db import execute_query, execute_modify
-from app.repositories.source_repository import SourceRepository
+# app/repositories/car_repository.py
+from typing import Optional, Dict, Any
+
 from app.utils.logger_config import logger
+
 
 class CarRepository:
     @staticmethod
-    def get_all_cars() -> list:
-        sql = ("SELECT id, make, model, year, body_type, fuel_type, "
-               + "engine_volume, battery_capacity_kwh, transmission, drive, mileage, country, price, customs, final_price_uah, link, source "
-               + "FROM cars")
-        return execute_query(sql)
+    def create_car_with_powertrain(data: Dict[str, Any], cursor: Any) -> Optional[int]:
+        """
+        Створює запис в 'cars', 'powertrains' та деталях силової установки (ice/electric).
+        Приймає відкритий курсор бази даних для виконання в межах існуючої транзакції.
+        Повертає car_id.
+        """
+        if data.get("model_id") is None:
+            logger.error("model_id не надано для створення запису 'cars'.")
+            # Транзакція буде відкочена на вищому рівні, якщо цей метод викликається з create_full_offer
+            return None
 
-    @staticmethod
-    def get_car_by_id(car_id: int) -> dict:
-        sql = ("SELECT id, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh, "
-               "transmission, drive, mileage, country, price, customs, final_price_uah, link, source "
-               "FROM cars WHERE id = %s")
-        rows = execute_query(sql, (car_id,))
-        return rows[0] if rows else None
-
-    @staticmethod
-    def car_exists(identifier: str) -> bool:
-        sql = "SELECT 1 FROM cars WHERE identifier = %s LIMIT 1"
-        rows = execute_query(sql, (identifier,))
-        return bool(rows)
-
-    @staticmethod
-    def save_car(car: dict) -> bool:
-        identifier = car.get("identifier")
-        if CarRepository.car_exists(identifier):
-            logger.info(f"Car with identifier '{identifier}' already exists. Skipping save.")
-            return False
-
-        source_id = car.get("source_id")
-
-        sql = (
-            "INSERT INTO cars (identifier, make, model, year, body_type, fuel_type, "
-            "engine_volume, battery_capacity_kwh, transmission, drive, mileage, country, "
-            "price, customs, final_price_uah, link, source_id) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        sql_cars = """
+                   INSERT INTO cars (model_id, production_year, body_type, transmission, drive)
+                   VALUES (%s, %s, %s, %s, %s) \
+                   """
+        car_params = (
+            data.get("model_id"),
+            data.get("production_year"),
+            data.get("body_type_str"),
+            data.get("transmission_str"),
+            data.get("drive_str"),
         )
+        cursor.execute(sql_cars, car_params)
+        car_id = cursor.lastrowid
+        logger.info(f"Створено запис в 'cars' з ID: {car_id}")
 
-
-        params = (
-            identifier,
-            car.get("make"),
-            car.get("model"),
-            car.get("year"),
-            car.get("body_type"),
-            car.get("fuel_type"),
-            car.get("engine_volume"),
-            car.get("battery_capacity_kwh"),
-            car.get("transmission"),
-            car.get("drive"),
-            car.get("mileage"),
-            car.get("country"),
-            car.get("price"),
-            car.get("customs"),
-            car.get("final_price_uah"),
-            car.get("link"),
-            source_id
+        sql_powertrains = """
+                          INSERT INTO powertrains (car_id, fuel_type_id, mileage)
+                          VALUES (%s, %s, %s) \
+                          """
+        powertrain_params = (
+            car_id,
+            data.get("fuel_type_id"),
+            data.get("mileage_km")
         )
+        cursor.execute(sql_powertrains, powertrain_params)
+        powertrain_id = cursor.lastrowid
+        logger.info(f"Створено запис в 'powertrains' з ID: {powertrain_id} для car_id: {car_id}")
 
-        try:
-            rows_affected = execute_modify(sql, params)
-            return rows_affected == 1
-        except Exception as e:
-            logger.error(f"Error saving car with identifier '{identifier}' to database: {e}")
-            return False
+        fuel_type_key = data.get("raw_fuel_type", "").lower()  # Змінено з raw_fuel_type_key
 
-
-    @staticmethod
-    def update_car(car_id: int, update_fields: dict) -> bool:
-        if not update_fields:
-            return False
-        set_clause = ", ".join(f"{key} = %s" for key in update_fields.keys())
-        params = list(update_fields.values()) + [car_id]
-        sql = f"UPDATE cars SET {set_clause} WHERE id = %s"
-        return execute_modify(sql, tuple(params)) == 1
-
-    @staticmethod
-    def delete_car(car_id: int) -> bool:
-        sql = "DELETE FROM cars WHERE id = %s"
-        return execute_modify(sql, (car_id,)) == 1
-
-    @staticmethod
-    def get_filtered_cars(
-            make: str = None,
-            model: str = None,
-            fuel_type: str = None,
-            year: int = None,
-            country: str = None,
-            sort: str = None
-    ) -> list:
-        query = (
-            "SELECT id, make, model, year, body_type, fuel_type, engine_volume, "
-            "battery_capacity_kwh, transmission, drive, mileage, country, price, customs, "
-            "final_price_uah, link, source, created_at "
-            "FROM cars"
-        )
-        where_clauses = []
-        params = []
-        if make:
-            where_clauses.append("make = %s")
-            params.append(make)
-        if model:
-            where_clauses.append("model = %s")
-            params.append(model)
-        if fuel_type:
-            where_clauses.append("fuel_type = %s")
-            params.append(fuel_type)
-        if year:
-            where_clauses.append("year = %s")
-            params.append(year)
-        if country:
-            where_clauses.append("country = %s")
-            params.append(country)
-        if where_clauses:
-            query += " WHERE " + " AND ".join(where_clauses)
-        # Сортування
-        if sort == 'price_asc':
-            query += " ORDER BY price ASC"
-        elif sort == 'price_desc':
-            query += " ORDER BY price DESC"
-        elif sort == 'oldest':
-            query += " ORDER BY created_at ASC"
-        else:
-            query += " ORDER BY created_at DESC"
-        return execute_query(query, tuple(params))
+        if fuel_type_key in ('petrol', 'diesel', 'lpg', 'cng', 'ethanol', 'gasoline'):
+            if data.get("engine_volume_cc") is not None:
+                sql_ice_details = """
+                                  INSERT INTO ice_powertrain_details (powertrain_id, engine_volume_cc)
+                                  VALUES (%s, %s) \
+                                  """
+                ice_params = (powertrain_id, data.get("engine_volume_cc"))
+                cursor.execute(sql_ice_details, ice_params)
+                logger.info(f"Створено запис в 'ice_powertrain_details' для powertrain_id: {powertrain_id}")
+            else:
+                logger.warning(f"Для ДВЗ (powertrain_id: {powertrain_id}) не надано engine_volume_cc.")
+        elif fuel_type_key == 'electric':
+            if data.get("battery_capacity_kwh") is not None:
+                sql_electric_details = """
+                                       INSERT INTO electric_powertrain_details (powertrain_id, battery_capacity_kwh)
+                                       VALUES (%s, %s) \
+                                       """
+                electric_params = (powertrain_id, data.get("battery_capacity_kwh"))
+                cursor.execute(sql_electric_details, electric_params)
+                logger.info(f"Створено запис в 'electric_powertrain_details' для powertrain_id: {powertrain_id}")
+            else:
+                logger.warning(f"Для EV (powertrain_id: {powertrain_id}) не надано battery_capacity_kwh.")
+        return car_id
 
     @staticmethod
-    def get_cars_by_ids(car_ids: list[int]) -> list[dict]:
-        if not car_ids:
-            return []
-        placeholders = ','.join(['%s'] * len(car_ids))
-        sql = ("SELECT id, make, model, year, body_type, fuel_type, engine_volume, battery_capacity_kwh,"
-               " transmission, drive, mileage, country, price, customs, final_price_uah, link, source"
-               f" FROM cars WHERE id IN ({placeholders})")
-        rows = execute_query(sql, tuple(car_ids))
-        return rows
+    def delete_car_and_dependencies(car_id: int, cursor: Any) -> bool:
+        """
+        Видаляє автомобіль ('cars') та пов'язані з ним записи ('powertrains', 'ice_details', 'electric_details').
+        Приймає відкритий курсор для виконання в межах транзакції.
+        Передбачається, що залежні 'offers' вже видалені або будуть видалені окремо.
+        """
+        # `powertrains` має ON DELETE CASCADE від `cars`.
+        # `ice_powertrain_details` та `electric_powertrain_details` мають ON DELETE CASCADE від `powertrains`.
+        # Отже, достатньо видалити з `cars`.
+        cursor.execute("DELETE FROM cars WHERE id = %s", (car_id,))
+        deleted_count = cursor.rowcount
+        if deleted_count > 0:
+            logger.info(
+                f"Видалено запис з 'cars' (ID: {car_id_to_delete}) та пов'язані дані силової установки каскадно.")
+            return True
+        logger.warning(f"Автомобіль з car_id {car_id} не знайдено для видалення з таблиці 'cars'.")
+        return False
+
+    # Методи вибірки, які повертають повну інформацію про авто (з JOIN-ами),
+    # можуть залишитися тут або бути частиною OfferRepository, якщо вони завжди вибираються в контексті пропозицій.
+    # Для чистоти, методи, що вибирають дані СПЕЦИФІЧНО для відображення пропозицій, краще перенести в OfferRepository.
+    # Залишимо тут тільки ті, що стосуються вибірки саме авто, якщо такі будуть потрібні окремо.
+    # Наразі, більшість ваших SELECT запитів були в контексті "пропозицій".

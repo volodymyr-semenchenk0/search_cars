@@ -1,5 +1,15 @@
 CREATE DATABASE IF NOT EXISTS car_offers_db CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS customs_calculations;
+DROP TABLE IF EXISTS offers;
+DROP TABLE IF EXISTS engines;
+DROP TABLE IF EXISTS cars;
+DROP TABLE IF EXISTS ice_powertrain_details;
+DROP TABLE IF EXISTS electric_powertrain_details;
+DROP TABLE IF EXISTS powertrains;
+SET FOREIGN_KEY_CHECKS = 1;
+
 CREATE TABLE IF NOT EXISTS countries
 (
     id           INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,52 +79,72 @@ CREATE TABLE IF NOT EXISTS fuel_types
 
 CREATE TABLE IF NOT EXISTS cars
 (
-    id                   INT AUTO_INCREMENT PRIMARY KEY,
-    model_id             INT,
-    production_year      INT,
-    body_type            VARCHAR(100)       DEFAULT NULL,
-    fuel_type            VARCHAR(50)        DEFAULT NULL,
-    engine_volume        DECIMAL(4, 1)      DEFAULT NULL,
-    transmission         VARCHAR(50)        DEFAULT NULL,
-    drive                VARCHAR(50)        DEFAULT NULL,
-    battery_capacity_kwh DECIMAL(5, 1)      DEFAULT NULL,
-    created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    model_id        INT,
+    production_year INT,
+    body_type       VARCHAR(100)       DEFAULT NULL,
+    transmission    VARCHAR(50)        DEFAULT NULL,
+    drive           VARCHAR(50)        DEFAULT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_cars_model
         FOREIGN KEY (model_id) REFERENCES car_models (id)
             ON DELETE RESTRICT
-
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE INDEX idx_cars_model_production_year ON cars (model_id, production_year);
 
-CREATE TABLE IF NOT EXISTS engines
+CREATE TABLE IF NOT EXISTS powertrains
 (
-    id                   INT AUTO_INCREMENT PRIMARY KEY,
-    car_id               INT       NOT NULL UNIQUE,
-    fuel_type_id         INT                DEFAULT NULL,
-    engine_volume        DECIMAL(4, 1)      DEFAULT NULL,
-    mileage              INT                DEFAULT NULL,
-    battery_capacity_kwh DECIMAL(5, 1)      DEFAULT NULL,
-    created_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    car_id       INT       NOT NULL UNIQUE,
+    fuel_type_id INT                DEFAULT NULL,
+    mileage      INT                DEFAULT NULL,
+    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_engines_car
+    CONSTRAINT fk_powertrains_car
         FOREIGN KEY (car_id) REFERENCES cars (id)
             ON DELETE CASCADE,
-
-    CONSTRAINT fk_engines_fuel_type
+    CONSTRAINT fk_powertrains_fuel_type
         FOREIGN KEY (fuel_type_id) REFERENCES fuel_types (id)
             ON DELETE SET NULL
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
+CREATE INDEX idx_powertrains_fuel_type_id ON powertrains (fuel_type_id);
 
+
+
+CREATE TABLE IF NOT EXISTS ice_powertrain_details
+(
+    powertrain_id    INT PRIMARY KEY,
+    engine_volume_cc INT NULL,
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ice_details_powertrain
+        FOREIGN KEY (powertrain_id) REFERENCES powertrains (id)
+            ON DELETE CASCADE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE INDEX idx_engines_fuel_type_id ON engines (fuel_type_id);
+
+CREATE TABLE IF NOT EXISTS electric_powertrain_details
+(
+    powertrain_id        INT PRIMARY KEY,
+    battery_capacity_kwh DECIMAL(5, 1) DEFAULT NULL,
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_electric_details_powertrain
+        FOREIGN KEY (powertrain_id) REFERENCES powertrains (id)
+            ON DELETE CASCADE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci;
 
 
 CREATE TABLE IF NOT EXISTS offers
@@ -162,7 +192,7 @@ CREATE TABLE IF NOT EXISTS customs_calculations
     customs_payments_total_uah  DECIMAL(12, 2)     DEFAULT NULL,
     final_total_without_pension DECIMAL(12, 2)     DEFAULT NULL,
     final_total                 DECIMAL(12, 2)     DEFAULT NULL,
-    eur_to_uah_rate_actual      DECIMAL(10, 6)     DEFAULT NULL,
+    eur_to_uah_rate_actual      DECIMAL(10, 4)     DEFAULT NULL,
 
     created_at                  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at                  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

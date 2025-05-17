@@ -3,7 +3,9 @@ from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
+from pydantic_core._pydantic_core import ValidationError
 
+from app.schemas.parsed_offer import ParsedCarOffer
 from app.utils.ev_utils import find_battery_capacity
 from app.utils.logger_config import logger
 
@@ -12,7 +14,7 @@ class AutoScout24Parser:
     _searched_cars_count = 0
 
     def __init__(self, base_url, make, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel,
-                 page_count=2,
+                 page_count=1,
                  ):
         self.base_url = base_url
         self.make = make
@@ -62,8 +64,8 @@ class AutoScout24Parser:
 
         return params, path
 
-    def parse(self):
-        all_parsed_cars_data = []
+    def parse(self) -> list[ParsedCarOffer]:
+        all_parsed_cars_data_models = []
         params, path = self._configure_url()
         page = 1
         while page <= self.page_count:
@@ -101,66 +103,50 @@ class AutoScout24Parser:
                         logger.warning("JSON __NEXT_DATA__ не знайдено.")
                         continue
 
-                    try:
-                        ld_data = json.loads(short_data.string)
-                        next_data = json.loads(detailed_data.string)
-                        listing = next_data["props"]["pageProps"]["listingDetails"]
-                        vehicle = listing.get("vehicle", {})
+                    ld_data = json.loads(short_data.string)
+                    next_data = json.loads(detailed_data.string)
+                    listing = next_data["props"]["pageProps"]["listingDetails"]
+                    vehicle = listing.get("vehicle", {})
 
-                        identifier = listing.get("id")
-                        brand = vehicle.get("make")
-                        model = vehicle.get("model")
-                        year = self._parse_production_year(vehicle, detail_soup)
-                        mileage = vehicle.get("mileageInKmRaw")
-                        fuel = vehicle.get("fuelCategory", {}).get("formatted")
-
-                        battery_capacity_kwh = None
-                        if fuel == "electric":
-                            battery_capacity_kwh = find_battery_capacity(brand, model, year)
-
-                        engine_volume = vehicle.get("rawDisplacementInCCM")
-                        price = ld_data.get("offers", {}).get("price")
-                        currency = ld_data.get("offers", {}).get("priceCurrency")
-                        transmission = vehicle.get("transmissionType")
-                        drive = vehicle.get("driveTrain")
-
-                        country_code = listing.get("location", {}).get("countryCode")
-                        body = vehicle.get("bodyType")
-
-                    except Exception as e:
-                        logger.error("Неможливо обробити JSON структуру:", e)
-                        continue
-
-                    car_data = {
-                        "identifier": identifier,
+                    car_data_dict = {
+                        "identifier": listing.get("id"),
                         "link_to_offer": detail_url,
-                        "price": price,
-                        "currency": currency,
-                        "country_code": country_code,
-                        "make": brand,
-                        "model": model,
-                        "year": year,
-                        "body_type": body,
-                        "fuel_type_key": fuel,
-                        "engine_volume": engine_volume,
-                        "battery_capacity_kwh": battery_capacity_kwh,
-                        "transmission": transmission,
-                        "drive": drive,
-                        "mileage": mileage,
+                        "price": ld_data.get("offers", {}).get("price"),
+                        "currency": ld_data.get("offers", {}).get("priceCurrency"),
+                        "country_code": listing.get("location", {}).get("countryCode"),
+                        "make": vehicle.get("make"),
+                        "model": vehicle.get("model"),
+                        "year": self._parse_production_year(vehicle, ld_data),
+                        "body_type": vehicle.get("bodyType"),
+                        "fuel_type": vehicle.get("fuelCategory", {}).get("formatted", "").lower() or None,
+                        "engine_volume": vehicle.get("rawDisplacementInCCM"),
+                        "battery_capacity_kwh": None,
+                        "transmission": vehicle.get("transmissionType"),
+                        "drive": vehicle.get("driveTrain"),
+                        "mileage": vehicle.get("mileageInKmRaw"),
                     }
-                    logger.info(f"Отримано оголошення:{car_data}")
 
-                    all_parsed_cars_data.append(car_data)
+                    if car_data_dict["fuel_type"] == "electric":
+                        car_data_dict["battery_capacity_kwh"] = find_battery_capacity(
+                            car_data_dict["make"], car_data_dict["model"], car_data_dict["year"]
+                        )
 
+                    validated_offer = ParsedCarOffer(**car_data_dict)
+                    all_parsed_cars_data_models.append(validated_offer)
+                    logger.info(f"Успішно розпарсено та валідовано оголошення: {validated_offer.identifier}")
+
+
+                except ValidationError as e:
+                    logger.error(f"Помилка валідації даних для оголошення (URL: {detail_url}): {e.errors()}")
                 except Exception as e:
-                    logger.error(f"Помилка при обробці авто: {e}")
+                    logger.error(f"Загальна помилка при обробці авто: {e} (URL: {detail_url})")
 
             page += 1
 
-        return all_parsed_cars_data
+        return all_parsed_cars_data_models
 
     @staticmethod
-    def _parse_production_year(vehicle, detail_soup):
+    def _parse_production_year(vehicle, ld_data):
         year_val = vehicle.get("productionYear")
 
         if not year_val:
@@ -169,14 +155,8 @@ class AutoScout24Parser:
             return year_val
 
         if not year_val:
-            script_tag = detail_soup.find("script", type="application/ld+json")
-            if not script_tag:
-                logger.warning("JSON не знайдено.")
-                return None
-
             try:
-                data = json.loads(script_tag.string)
-                year_val = data.get("offers", {}).get("itemOffered", {}).get("productionDate")
+                year_val = ld_data.get("offers", {}).get("itemOffered", {}).get("productionDate")
             except Exception as e:
                 logger.error("Неможливо розпарсити JSON:", e)
                 return None
