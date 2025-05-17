@@ -1,13 +1,13 @@
 from flask import flash
-from app.parsers.parsers_factory import ParserFactory
-from app.services.source_service import SourceService
-from app.services.car_service import CarService, ServiceError as CarServiceError
-from app.repositories.country_repository import CountryRepository
-from app.repositories.fuel_type_repository import FuelTypeRepository
-from app.repositories.car_make_repository import CarMakeRepository
-from app.repositories.car_model_repository import CarModelRepository
+from app.parsers import ParserFactory
+from .source_service import SourceService
+from .car_service import CarService, ServiceError as CarServiceError
+from app.repositories import FuelTypeRepository
+from app.repositories import CarMakeRepository
+from app.repositories import CarModelRepository
 from app.schemas.parsed_offer import ParsedCarOffer
 from app.utils.logger_config import logger
+
 
 class ParseService:
     @staticmethod
@@ -44,10 +44,12 @@ class ParseService:
                     fuel_type_id = FuelTypeRepository.get_id_by_key_name(offer_dto.fuel_type)
 
                 if offer_dto.make and not make_id:
-                    logger.warning(f"ParseService: Не вдалося отримати/створити make_id для '{offer_dto.make}'. Пропуск: {offer_dto.identifier}")
+                    logger.warning(
+                        f"ParseService: Не вдалося отримати/створити make_id для '{offer_dto.make}'. Пропуск: {offer_dto.identifier}")
                     continue
                 if offer_dto.model and not model_id:
-                    logger.warning(f"ParseService: Не вдалося отримати/створити model_id для '{offer_dto.model}' (make_id: {make_id}). Пропуск: {offer_dto.identifier}")
+                    logger.warning(
+                        f"ParseService: Не вдалося отримати/створити model_id для '{offer_dto.model}' (make_id: {make_id}). Пропуск: {offer_dto.identifier}")
                     continue
 
                 data_for_service = {
@@ -66,24 +68,31 @@ class ParseService:
                     "engine_volume_cc": offer_dto.engine_volume,
                     "battery_capacity_kwh": offer_dto.battery_capacity_kwh,
                     "mileage_km": offer_dto.mileage,
-                    "raw_fuel_type": offer_dto.fuel_type # Передаємо ключ типу пального
+                    "raw_fuel_type": offer_dto.fuel_type  # Передаємо ключ типу пального
                 }
 
                 created_offer_id = CarService.add_offer_from_parser(data_for_service)
                 if created_offer_id:
-                    logger.info(f"ParseService: Успішно оброблено та передано на збереження пропозицію {offer_dto.identifier}, new offer_id: {created_offer_id}.")
+                    logger.info(
+                        f"ParseService: Успішно оброблено та передано на збереження пропозицію {offer_dto.identifier}, new offer_id: {created_offer_id}.")
                     saved_cars_count += 1
                 else:
-                    logger.info(f"ParseService: Пропозиція {offer_dto.identifier} вже існує або не була збережена сервісом (повернуто None).")
+                    logger.info(
+                        f"ParseService: Пропозиція {offer_dto.identifier} вже існує або не була збережена сервісом (повернуто None).")
 
             except CarServiceError as e:
                 logger.error(f"ParseService: Помилка від CarService при обробці {offer_dto.identifier}: {e}")
             except Exception as e:
-                logger.error(f"ParseService: Непередбачена помилка при обробці пропозиції {offer_dto.identifier}: {e}", exc_info=True)
+                logger.error(f"ParseService: Непередбачена помилка при обробці пропозиції {offer_dto.identifier}: {e}",
+                             exc_info=True)
 
         if saved_cars_count > 0:
-            flash(f"Успішно збережено {saved_cars_count} нових авто з {processed_offers_count} знайдених на {src['name']}.", 'success')
-        elif parsed_offers :
-            flash(f"Знайдено {processed_offers_count} авто на {src['name']}, але нових для збереження не було (вже існують або не вдалося обробити).", 'info')
+            flash(
+                f"Успішно збережено {saved_cars_count} нових авто з {processed_offers_count} знайдених на {src['name']}.",
+                'success')
+        elif parsed_offers:
+            flash(
+                f"Знайдено {processed_offers_count} авто на {src['name']}, але нових для збереження не було (вже існують або не вдалося обробити).",
+                'info')
 
         return saved_cars_count

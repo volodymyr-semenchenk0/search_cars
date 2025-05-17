@@ -1,9 +1,8 @@
-# app/services/car_service.py
 from typing import Optional, Dict, Any, List
 
-from app.customs import CalculateCustoms
-from app.repositories.customs_calculation_repository import CustomsCalculationRepository  # Додано
-from app.repositories.offer_repository import OfferRepository  # Змінено
+from .calculate_customs_service import CalculateCustomsService
+from app.repositories import CustomsCalculationRepository
+from app.repositories import OfferRepository
 from app.utils.logger_config import logger
 
 
@@ -26,11 +25,11 @@ class CarService:
                 logger.error("Не надано offer_identifier або source_id для додавання пропозиції.")
                 raise ServiceError("Offer identifier and source ID are required.")
 
-            if OfferRepository.exists(offer_identifier, source_id):  # Використовуємо OfferRepository
+            if OfferRepository.exists(offer_identifier, source_id):
                 logger.info(f"Пропозиція {offer_identifier} від source_id {source_id} вже існує. Пропуск.")
                 return None
 
-            offer_id = OfferRepository.create_full_offer_with_details(data)  # Використовуємо OfferRepository
+            offer_id = OfferRepository.create_full_offer_with_details(data)
             if offer_id is None:
                 raise ServiceError(f"Не вдалося створити повну пропозицію для {offer_identifier}.")
 
@@ -50,7 +49,7 @@ class CarService:
                     logger.warning(
                         f"Для авто offer_id {offer_id} з типом пального {raw_fuel_type_from_data} не вказано об'єм двигуна. Розрахунок мита неможливий.")
                 else:
-                    customs_calculator = CalculateCustoms()
+                    customs_calculator = CalculateCustomsService()
                     calc_results = customs_calculator.calculate(
                         price_eur=price_eur,
                         engine_volume_cc=engine_volume_cc,
@@ -151,7 +150,7 @@ class CarService:
 
             if price_eur is not None and production_year is not None and raw_fuel_type_from_data is not None:
                 # ... (логіка розрахунку мита залишається такою ж) ...
-                customs_calculator = CalculateCustoms()
+                customs_calculator = CalculateCustomsService()
                 calc_results = customs_calculator.calculate(
                     price_eur=float(price_eur),
                     engine_volume_cc=float(engine_volume_cc) if engine_volume_cc is not None else None,

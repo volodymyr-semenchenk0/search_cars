@@ -29,20 +29,16 @@
             {% endfor %}
         </select>
     </div>
-    <!-- Бренд -->
     <div class="col-md-3">
         <label for="make" class="form-label">Марка</label>
         <select class="form-select" id="make" name="make">
             <option value="">Оберіть марку</option>
-            {% for make in makes %}
-            <option value="{{ make.make_id }}">
-                {{ make.make_display }}
-            </option>
+            {% for make_item in makes %}
+            <option value="{{ make_item.id }}"> {{ make_item.name }}</option>
             {% endfor %}
         </select>
     </div>
 
-    <!-- Модель -->
     <div class="col-md-3">
         <label for="model" class="form-label">Модель</label>
         <select class="form-select" id="model" name="model" disabled>
@@ -50,7 +46,6 @@
         </select>
     </div>
 
-    <!-- Ціна (€) -->
     <div class="col-md-3">
         <label class="form-label">Ціна (€)</label>
         <div class="d-flex">
@@ -75,7 +70,6 @@
         </div>
     </div>
 
-    <!-- Рік -->
     <div class="col-md-3">
         <label class="form-label">Рік</label>
         <div class="d-flex">
@@ -100,7 +94,6 @@
         </div>
     </div>
 
-    <!-- Пробіг -->
     <div class="col-md-3">
         <label class="form-label">Пробіг (км)</label>
         <div class="d-flex">
@@ -126,7 +119,6 @@
         </div>
     </div>
 
-    <!-- Країна -->
     <div class="col-md-3">
         <label for="cy" class="form-label">Країна</label>
         <select class="form-select" id="cy" name="cy">
@@ -151,7 +143,6 @@
         </select>
     </div>
 
-    <!-- Кнопка -->
     <div class="col-md-3 align-self-end">
         <button id="searchBtn" type="submit" class="btn btn-primary w-100">Пошук на AutoScout24</button>
     </div>

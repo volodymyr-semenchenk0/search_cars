@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Optional, Dict
 
 from app.utils.logger_config import logger
-from app.utils.rate import get_eur_to_uah_rate
+from .nbu_rate_service import NBURateService
 
 
-class CalculateCustoms:
+class CalculateCustomsService:
     def __init__(self):
         self.living_minimum = 3028
         self.duty_rate = 0.10
@@ -103,7 +103,7 @@ class CalculateCustoms:
             if engine_volume_cc is None:
                 return None
 
-        eur_to_uah_rate = get_eur_to_uah_rate()
+        eur_to_uah_rate = NBURateService.get_eur_to_uah_rate()
         price_uah = round(price_eur * eur_to_uah_rate, 2)
 
         age_years = self._calculate_age_coefficients(production_year)

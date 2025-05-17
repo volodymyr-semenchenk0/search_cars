@@ -1,18 +1,16 @@
-# app/repositories/car_model_repository.py
 from typing import Optional
 
-from app.db import execute_query, get_db_connection  # execute_modify не потрібен
+from app.db import execute_query, get_db_connection
 from app.utils.logger_config import logger
 
 
 class CarModelRepository:
     @staticmethod
     def get_id_by_make_id_and_name(make_id: int, model_name: str) -> Optional[int]:
-        """Отримує ID моделі для вказаної марки (make_id) та назви моделі."""
         if not model_name:
             logger.warning("Model name is not provided for ID lookup.")
             return None
-        if not make_id:  # make_id є обов'язковим для контексту моделі
+        if not make_id:
             logger.warning("Make ID is not provided for model lookup.")
             return None
 
@@ -32,7 +30,6 @@ class CarModelRepository:
 
     @staticmethod
     def create(make_id: int, model_name: str) -> Optional[int]:
-        """Створює нову модель для вказаної марки та повертає її ID."""
         model_name_clean = model_name.strip()
         logger.info(f"Спроба створити нову модель: '{model_name_clean}' для make_id: {make_id}")
 
@@ -59,10 +56,6 @@ class CarModelRepository:
 
     @staticmethod
     def get_or_create_id(make_id: int, model_name: str) -> Optional[int]:
-        """
-        Отримує ID моделі. Якщо модель не знайдено, створює нову.
-        Потрібен make_id, оскільки назви моделей можуть бути неунікальними без марки.
-        """
         if not model_name:
             logger.warning("Model name is not provided for get_or_create_id.")
             return None
@@ -79,5 +72,15 @@ class CarModelRepository:
         if model_id:
             return model_id
 
-        # Модель не знайдено, створюємо нову
         return CarModelRepository.create(make_id, model_name_clean)
+
+    @staticmethod
+    def get_models_by_make_id_for_select(make_id: int) -> list[dict]:
+        if not make_id:
+            return []
+        sql = "SELECT id, name FROM car_models WHERE make_id = %s ORDER BY name ASC"
+        try:
+            return execute_query(sql, (make_id,))
+        except Exception as e:
+            logger.error(f"Помилка отримання моделей для make_id {make_id}: {e}", exc_info=True)
+            return []

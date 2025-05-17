@@ -10,14 +10,14 @@ def normalize_filters(data: dict) -> dict:
         return v
 
     return {
-        "make":      clean("make", lower=True, dashify=True),
-        "model":     clean("model", lower=True, dashify=True),
+        "make": clean("make", lower=True, dashify=True),
+        "model": clean("model", lower=True, dashify=True),
         "pricefrom": clean("pricefrom"),
-        "priceto":   clean("priceto"),
-        "fregfrom":  clean("fregfrom"),
-        "fregto":    clean("fregto"),
-        "kmfrom":    clean("kmfrom"),
-        "kmto":      clean("kmto"),
-        "cy":        clean("cy"),
-        "fuel":      clean("fuel"),
+        "priceto": clean("priceto"),
+        "fregfrom": clean("fregfrom"),
+        "fregto": clean("fregto"),
+        "kmfrom": clean("kmfrom"),
+        "kmto": clean("kmto"),
+        "cy": clean("cy"),
+        "fuel": clean("fuel"),
     }

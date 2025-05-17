@@ -1,10 +1,8 @@
-from flask import render_template, request, redirect, url_for, flash, Blueprint
+from flask import render_template, request, redirect, url_for, Blueprint
 
-from app.customs import CalculateCustoms
-from app.data.options import FUEL_TYPES, get_years_list
+from app.services import CalculateCustomsService
 from app.services.car_service import CarService, NotFoundError, ServiceError
 from app.utils.logger_config import logger
-from app.utils.rate import get_eur_to_uah_rate
 
 car_bp = Blueprint('car', __name__, url_prefix='/cars')
 
@@ -30,7 +28,7 @@ def edit_car(id):
             return render_template('edit_car.html', car=car)
 
         customs_uah, final_price = None, None
-        calc_customs = CalculateCustoms().calculate(
+        calc_customs = CalculateCustomsService().calculate(
             price,
             engine_volume,
             year,

@@ -1,4 +1,5 @@
 import logging
+
 from colorlog import ColoredFormatter
 
 logger = logging.getLogger("app_logs")
@@ -14,15 +15,11 @@ formatter = ColoredFormatter(
         "CRITICAL": "bold_red",
     },
 )
-
-# Вивід в консоль
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(formatter)
 
-# Вивід у файл
 file_handler = logging.FileHandler("app_logs.log", encoding="utf-8")
 file_handler.setFormatter(logging.Formatter("[%(levelname)s] %(asctime)s - %(message)s"))
 
-# Додати хендлери
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)

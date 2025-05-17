@@ -1,6 +1,8 @@
 from typing import Optional
+
 from app.db import execute_query, get_db_connection
 from app.utils.logger_config import logger
+
 
 class CarMakeRepository:
     @staticmethod
@@ -23,7 +25,7 @@ class CarMakeRepository:
             return None
 
     @staticmethod
-    def create(make_name: str) -> Optional[int]: # ---- ЗМІНА ТУТ: видалено country_id ----
+    def create(make_name: str) -> Optional[int]:
         make_name_clean = make_name.strip()
         logger.info(f"Спроба створити нову марку: '{make_name_clean}'")
 
@@ -32,7 +34,7 @@ class CarMakeRepository:
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            # ---- ЗМІНА ТУТ: country_id тепер завжди NULL при створенні через цей метод ----
+
             sql_insert = "INSERT INTO car_makes (name, country_id) VALUES (%s, NULL)"
             cursor.execute(sql_insert, (make_name_clean,))
             make_id = cursor.lastrowid
@@ -51,7 +53,7 @@ class CarMakeRepository:
                 conn.close()
 
     @staticmethod
-    def get_or_create_id(make_name: str) -> Optional[int]: # ---- ЗМІНА ТУТ: видалено country_id ----
+    def get_or_create_id(make_name: str) -> Optional[int]:
         if not make_name:
             logger.warning("Make name is not provided for get_or_create_id.")
             return None
@@ -65,5 +67,13 @@ class CarMakeRepository:
         if make_id:
             return make_id
 
-        # Марку не знайдено, створюємо нову (без country_id)
         return CarMakeRepository.create(make_name_clean)
+
+    @staticmethod
+    def get_all_makes_for_select() -> list[dict]:
+        sql = "SELECT id, name FROM car_makes ORDER BY name ASC"
+        try:
+            return execute_query(sql)
+        except Exception as e:
+            logger.error(f"Помилка отримання всіх марок для вибору: {e}", exc_info=True)
+            return []
