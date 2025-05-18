@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, Blueprint
+from flask import render_template, request, redirect, url_for, flash, Blueprint, session
 
 from app.data.options import COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
 from app.services import (
@@ -8,8 +8,9 @@ from app.services import (
     NBURateService,
     OfferService,
     SourceService,
-    ParseService,
+    ParseService
 )
+from app.utils.logger_config import logger
 from app.utils.normalize_filters import normalize_filters
 
 main_bp = Blueprint('main', __name__)
@@ -17,25 +18,23 @@ makes = CarMakeService.get_all_makes_for_select()
 fuel_types = FuelTypeService.list_all_fuel_types_for_select()
 
 
-@main_bp.route('/')
-def index():
+@main_bp.route('/history')
+def get_history_data():
     raw_args = request.args.to_dict()
     clean_args = {k: v for k, v in raw_args.items() if v}
     if raw_args and raw_args != clean_args:
-        return redirect(url_for('main.index', **clean_args))
+        return redirect(url_for('main.get_history_data', **clean_args))
 
-    # Парсимо фільтри
     fields = ("make", "model", "fuel_type", "year", "country_of_listing", "sort")
     selected = {f: request.args.get(f) for f in fields}
 
-    # Парсимо ids для збереження вибраних авто
     ids_param = request.args.get('ids', '')
     try:
         selected_ids = [int(i) for i in ids_param.split(',') if i]
     except ValueError:
         selected_ids = []
 
-    cars = OfferService.list_cars(**selected)
+    cars = OfferService.get_filtered_cars_list(**selected)
 
     return render_template(
         'data_table.html',
@@ -51,34 +50,43 @@ def index():
 @main_bp.route("/search", methods=['GET', 'POST'])
 def search():
     sources = SourceService.list_sources()
+    newly_found_offers = []
+
+    current_form_values = request.form.to_dict() if request.method == 'POST' else request.args.to_dict()
 
     if request.method == 'POST':
-        data = request.form.to_dict()
-        filters = normalize_filters(data)
+        raw_form_data_post = request.form.to_dict()
+        filters = normalize_filters(raw_form_data_post)
 
         try:
-            source_id = int(data.get('source_id'))
-            ParseService.parse_website(source_id, **filters)
+            source_id = int(raw_form_data_post.get('source_id'))
+
+            saved_cars_count, newly_saved_ids = ParseService.parse_website(source_id, **filters)
+
+            if newly_saved_ids:
+                session['newly_found_ids'] = newly_saved_ids
+                session['results_originated_from_post'] = True
+                flash(f"Збережено {saved_cars_count} нових оголошень.", 'success')
+            else:
+                flash("Нічого нового не знайдено або все вже є в базі.", 'info')
         except Exception as e:
-            flash(str(e), 'warning')
+            flash("Помилка при пошуку", "danger")
+            logger.exception(e)
 
-        # redirect_params = {k: v for k, v in data.items() if v}
-        return redirect(url_for('main.search'))
+        return redirect(url_for('main.search', **raw_form_data_post))
 
-    selected_filters = {
-        "source_id": request.args.get('source_id'),
-        "make": request.args.get('make'),
-        "model": request.args.get('model'),
-        "pricefrom": request.args.get('pricefrom'),
-        "priceto": request.args.get('priceto'),
-        "fregfrom": request.args.get('fregfrom'),
-        "fregto": request.args.get('fregto'),
-        "kmfrom": request.args.get('kmfrom'),
-        "kmto": request.args.get('kmto'),
-        "cy": request.args.get('cy'),
-        "fuel": request.args.get('fuel'),
-    }
-    selected_filters = {k: v for k, v in selected_filters.items() if v is not None}
+    else:
+        selected_values_for_template = current_form_values or request.args.to_dict()
+
+        referer = request.referrer or ''
+        if not referer.endswith('/search'):
+            session.pop('results_originated_from_post', None)
+            session.pop('newly_found_ids', None)
+
+        if session.get('results_originated_from_post'):
+            ids_from_session = session.get('newly_found_ids', [])
+            if ids_from_session:
+                newly_found_offers = OfferService.get_offers_list_by_ids(ids_from_session)
 
     return render_template(
         "search.html",
@@ -89,9 +97,9 @@ def search():
         price_options=PRICE_OPTIONS,
         mileage_options=MILEAGE_OPTIONS,
         sources=sources,
-        selected=selected_filters
+        selected=selected_values_for_template,
+        newly_found_offers=newly_found_offers,
     )
-
 
 @main_bp.route('/duty_calc', methods=['GET', 'POST'])
 def duty_calc():

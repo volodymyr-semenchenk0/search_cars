@@ -1,4 +1,3 @@
-# app/services/offer_service.py
 from typing import Optional, Dict, Any, List
 
 from app.repositories import CustomsCalculationRepository, OfferRepository, CarRepository
@@ -43,7 +42,6 @@ class OfferService:
             battery_capacity_kwh = data.get("battery_capacity_kwh")
 
             if price_eur is not None and production_year is not None and raw_fuel_type_from_data is not None:
-                # Перевірка наявності об'єму для ДВЗ/гібридів та ємності для електро
                 can_calculate = False
                 if raw_fuel_type_from_data.lower() == "electric":
                     if battery_capacity_kwh is None:
@@ -51,7 +49,7 @@ class OfferService:
                             f"Для електрокара offer_id {offer_id} не вказано ємність батареї. Розрахунок мита неможливий.")
                     else:
                         can_calculate = True
-                else: # ДВЗ, гібриди
+                else:
                     if engine_volume_cc is None:
                         logger.warning(
                             f"Для авто offer_id {offer_id} з типом пального {raw_fuel_type_from_data} не вказано об'єм двигуна. Розрахунок мита неможливий.")
@@ -83,7 +81,7 @@ class OfferService:
             raise ServiceError(f"Помилка сервісу при додаванні пропозиції: {e}")
 
     @staticmethod
-    def list_cars(
+    def get_filtered_cars_list(
             make: Optional[str] = None,
             model: Optional[str] = None,
             fuel_type: Optional[str] = None,
@@ -127,7 +125,7 @@ class OfferService:
             raise ServiceError(f"Помилка сервісу при видаленні пропозиції: {e}")
 
     @staticmethod
-    def get_offers_for_comparison(offer_ids: List[int]) -> List[Dict[str, Any]]:
+    def get_offers_list_by_ids(offer_ids: List[int]) -> List[Dict[str, Any]]:
         if not offer_ids:
             return []
         try:
@@ -147,14 +145,10 @@ class OfferService:
         cursor = None
         try:
             conn = get_db_connection()
-            # Переконайтесь, що курсор створюється з dictionary=True, якщо репозиторії цього очікують
-            # при отриманні даних (fetchone, fetchall). Для execute це не так важливо.
             cursor = conn.cursor(dictionary=True)
             conn.start_transaction()
 
-            # 1. Оновити дані в таблиці 'offers' (ціна)
             if 'price_eur' in data and data['price_eur'] is not None:
-                # Припускаємо, що OfferRepository.update_offer_price приймає курсор
                 OfferRepository.update_offer_price(offer_id, data['price_eur'], cursor)
                 logger.info(f"OfferService: Оновлено ціну для offer_id {offer_id}.")
 
@@ -167,7 +161,6 @@ class OfferService:
                     car_update_data['production_year'] = data['production_year']
 
                 if car_update_data:
-                    # Припускаємо, що CarRepository.update_car_fields приймає курсор
                     CarRepository.update_car_fields(car_id, car_update_data, cursor)
                     logger.info(f"OfferService: Оновлено дані в 'cars' для car_id {car_id} з {car_update_data}.")
 
@@ -179,31 +172,27 @@ class OfferService:
                     }
 
                     should_update_powertrain_details = False
-                    # ... (логіка для should_update_powertrain_details як раніше) ...
                     if data.get('raw_fuel_type') == 'electric':
                         if data.get('battery_capacity_kwh') is not None or \
-                                (data.get('battery_capacity_kwh') is None and 'battery_capacity_kwh' in data): # Явне скидання
+                                (data.get('battery_capacity_kwh') is None and 'battery_capacity_kwh' in data):
                             should_update_powertrain_details = True
                     else:
                         if data.get('engine_volume_cc') is not None or \
-                                (data.get('engine_volume_cc') is None and 'engine_volume_cc' in data): # Явне скидання
+                                (data.get('engine_volume_cc') is None and 'engine_volume_cc' in data):
                             should_update_powertrain_details = True
 
                     if should_update_powertrain_details:
-                        # Припускаємо, що CarRepository.update_powertrain_details приймає курсор
                         CarRepository.update_powertrain_details(powertrain_id, powertrain_details_update_data, cursor)
                         logger.info(f"OfferService: Оновлено деталі силової установки для powertrain_id {powertrain_id}.")
 
-            # --- Блок перерахунку та збереження мита ---
+
             price_for_calc = data.get("price_eur")
-            # ... (решта змінних для розрахунку як раніше) ...
             year_for_calc = data.get("production_year")
             engine_for_calc = data.get("engine_volume_cc")
             battery_for_calc = data.get("battery_capacity_kwh")
             fuel_type_for_calc = data.get("raw_fuel_type")
 
             can_recalculate_customs = False
-            # ... (логіка для can_recalculate_customs як раніше) ...
             if price_for_calc is not None and year_for_calc is not None and fuel_type_for_calc is not None:
                 if fuel_type_for_calc.lower() == "electric":
                     if battery_for_calc is not None:
@@ -223,24 +212,19 @@ class OfferService:
                     battery_capacity_kwh=battery_for_calc
                 )
                 if recalculated_customs_results:
-                    # Передаємо курсор до репозиторію
                     if CustomsCalculationRepository.save_or_update(offer_id, recalculated_customs_results, db_cursor=cursor):
                         logger.info(f"OfferService: Митні розрахунки для offer_id {offer_id} успішно перераховано та збережено в рамках транзакції.")
-                    else:
-                        # Цей випадок (повернення False без помилки) менш імовірний, якщо метод save_or_update прокидає помилки
-                        logger.warning(f"OfferService: Збереження митних розрахунків для offer_id {offer_id} не змінило жодного рядка (в рамках транзакції).")
                 else:
                     logger.warning(f"OfferService: Перерахунок мита для offer_id {offer_id} не дав результатів. Існуючі розрахунки мита не змінено.")
 
-            conn.commit() # Фіксуємо ВСІ зміни, включаючи митні, якщо успішно
+            conn.commit()
             logger.info(f"OfferService: Транзакцію для оновлення offer_id {offer_id} успішно зафіксовано.")
             return True
 
-        except Exception as e: # Обробка будь-якої помилки, включаючи ті, що прокинуті з репозиторіїв
+        except Exception as e:
             if conn and conn.is_connected():
                 conn.rollback()
                 logger.error(f"OfferService: Транзакцію для offer_id {offer_id} відкочено через помилку: {e}", exc_info=True)
-            # Перекидаємо помилку далі, щоб її можна було обробити в маршруті як ServiceError
             raise ServiceError(f"Помилка сервісу при оновленні даних ({type(e).__name__}): {e}")
         finally:
             if cursor:

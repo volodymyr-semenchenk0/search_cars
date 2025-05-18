@@ -70,47 +70,6 @@ class OfferRepository:
                 conn.close()
 
     @staticmethod
-    def get_all_overview() -> List[Dict[str, Any]]:
-        sql = """
-              SELECT o.id               as offer_id,
-                     o.link_to_offer,
-                     o.price,
-                     o.currency,
-                     o.country_of_listing,
-                     s.name             as source_name,
-                     c.production_year,
-                     c.body_type,
-                     c.transmission,
-                     c.drive,
-                     cm.name            as model_name,
-                     cma.name           as make_name,
-                     pt.mileage,
-                     ice.engine_volume_cc,
-                     epd.battery_capacity_kwh,
-                     ft.key_name        as fuel_type,
-                     ft.label           as fuel_type_label,
-                     o.offer_created_at as offer_created_at,
-                     cust.customs_payments_total_uah,
-                     cust.final_total   as final_price_uah
-              FROM offers o
-                       JOIN cars c ON o.car_id = c.id
-                       JOIN sources s ON o.source_id = s.id
-                       LEFT JOIN car_models cm ON c.model_id = cm.id
-                       LEFT JOIN car_makes cma ON cm.make_id = cma.id
-                       LEFT JOIN powertrains pt ON pt.car_id = c.id
-                       LEFT JOIN fuel_types ft ON pt.fuel_type_id = ft.id
-                       LEFT JOIN ice_powertrain_details ice ON pt.id = ice.powertrain_id
-                       LEFT JOIN electric_powertrain_details epd ON pt.id = epd.powertrain_id
-                       LEFT JOIN customs_calculations cust ON cust.offer_id = o.id
-              ORDER BY o.offer_created_at DESC
-              """
-        try:
-            return execute_query(sql)
-        except Exception as e:
-            logger.error(f"Помилка отримання всіх авто (огляд) в OfferRepository: {e}", exc_info=True)
-            return []
-
-    @staticmethod
     def get_details_by_id(offer_id: int) -> Optional[Dict[str, Any]]:
         sql = """
               SELECT o.id             as offer_id,
@@ -262,7 +221,7 @@ class OfferRepository:
                           cust.vat_uah,
                           cust.pension_fee_uah,
                           cust.customs_payments_total_uah,
-                          cust.final_total,
+                          cust.final_total as final_price_uah,
                           cust.eur_to_uah_rate_actual
                    FROM offers o
                             JOIN cars c ON o.car_id = c.id
@@ -303,7 +262,7 @@ class OfferRepository:
             base_sql += " ORDER BY o.price DESC, o.id DESC"
         elif sort_by == 'oldest':
             base_sql += " ORDER BY o.offer_created_at ASC, o.id ASC"
-        else: # Default sort
+        else:
             base_sql += " ORDER BY o.offer_created_at DESC, o.id DESC"
 
         try:
@@ -330,7 +289,8 @@ class OfferRepository:
                 epd.battery_capacity_kwh,
                 ft.key_name as fuel_type, ft.label as fuel_type_label,
                 cust.customs_payments_total_uah,
-                cust.final_total as final_price_uah
+                cust.final_total as final_price_uah,
+                cust.eur_to_uah_rate_actual
             FROM offers o
             JOIN cars c ON o.car_id = c.id
             JOIN sources s ON o.source_id = s.id
@@ -342,9 +302,12 @@ class OfferRepository:
             LEFT JOIN electric_powertrain_details epd ON pt.id = epd.powertrain_id
             LEFT JOIN customs_calculations cust ON cust.offer_id = o.id
             WHERE o.id IN ({placeholders})
+            ORDER BY FIELD(o.id, {placeholders}) 
         """
+        params = tuple(offer_ids) * 2 if len(offer_ids) > 0 else tuple()
+
         try:
-            return execute_query(sql, tuple(offer_ids))
+            return execute_query(sql, params)
         except Exception as e:
             logger.error(f"Помилка отримання пропозицій за списком ID (OfferRepository): {e}", exc_info=True)
             return []

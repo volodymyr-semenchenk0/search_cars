@@ -31,3 +31,26 @@ class FuelTypeRepository:
         except Exception as e:
             logger.error(f"Помилка при отриманні всіх типів пального: {e}", exc_info=True)
             return []
+
+
+    @staticmethod
+    def get_code_by_key_name(key_name: str) -> Optional[str]:
+        if not key_name:
+            logger.warning("Fuel type key_name is not provided for code lookup.")
+            return None
+
+        cleaned_key_name = key_name.strip().lower()
+        if not cleaned_key_name:
+            logger.warning("Cleaned fuel key_name is empty for code lookup.")
+            return None
+
+        sql = "SELECT code FROM fuel_types WHERE key_name = %s LIMIT 1"
+        try:
+            rows = execute_query(sql, (cleaned_key_name,))
+            if not rows:
+                logger.warning(f"Код для типу пального з key_name '{cleaned_key_name}' не знайдений.")
+                return None
+            return rows[0]['code']
+        except Exception as e:
+            logger.error(f"Помилка при отриманні коду типу пального за key_name '{cleaned_key_name}': {e}", exc_info=True)
+            return None

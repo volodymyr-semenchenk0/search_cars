@@ -1,15 +1,14 @@
-from flask import flash
 from app.parsers import ParserFactory
-from .source_service import SourceService
-from .offer_service import OfferService, ServiceError as CarServiceError
 from app.repositories import FuelTypeRepository, CarMakeRepository, CarModelRepository
 from app.schemas.parsed_offer import ParsedCarOffer
 from app.utils.logger_config import logger
+from .offer_service import OfferService, ServiceError as OfferServiceError
+from .source_service import SourceService
 
 
 class ParseService:
     @staticmethod
-    def parse_website(source_id: int, **filters) -> int:
+    def parse_website(source_id: int, **filters) -> tuple[int, list[int]]:
         src = SourceService.get_source_by_id(source_id)
 
         parsed_offers: list[ParsedCarOffer] = ParserFactory.get(
@@ -20,11 +19,11 @@ class ParseService:
 
         if not parsed_offers:
             logger.info(f"Парсер для {src['name']} не повернув жодних пропозицій за фільтрами.")
-            flash(f"За вашим запитом на {src['name']} нічого не знайдено.", 'info')
-            return 0
+            return 0, []
 
         saved_cars_count = 0
         processed_offers_count = 0
+        newly_saved_offer_ids = []
 
         for offer_dto in parsed_offers:
             processed_offers_count += 1
@@ -45,7 +44,7 @@ class ParseService:
                     logger.warning(
                         f"ParseService: Не вдалося отримати/створити make_id для '{offer_dto.make}'. Пропуск: {offer_dto.identifier}")
                     continue
-                if offer_dto.model and not model_id:
+                if offer_dto.model and not model_id and make_id:
                     logger.warning(
                         f"ParseService: Не вдалося отримати/створити model_id для '{offer_dto.model}' (make_id: {make_id}). Пропуск: {offer_dto.identifier}")
                     continue
@@ -66,7 +65,7 @@ class ParseService:
                     "engine_volume_cc": offer_dto.engine_volume,
                     "battery_capacity_kwh": offer_dto.battery_capacity_kwh,
                     "mileage_km": offer_dto.mileage,
-                    "raw_fuel_type": offer_dto.fuel_type  # Передаємо ключ типу пального
+                    "raw_fuel_type": offer_dto.fuel_type
                 }
 
                 created_offer_id = OfferService.add_offer_from_parser(data_for_service)
@@ -74,23 +73,15 @@ class ParseService:
                     logger.info(
                         f"ParseService: Успішно оброблено та передано на збереження пропозицію {offer_dto.identifier}, new offer_id: {created_offer_id}.")
                     saved_cars_count += 1
+                    newly_saved_offer_ids.append(created_offer_id)
                 else:
                     logger.info(
                         f"ParseService: Пропозиція {offer_dto.identifier} вже існує або не була збережена сервісом (повернуто None).")
 
-            except CarServiceError as e:
-                logger.error(f"ParseService: Помилка від CarService при обробці {offer_dto.identifier}: {e}")
+            except OfferServiceError as e:
+                logger.error(f"ParseService: Помилка від OfferService при обробці {offer_dto.identifier}: {e}")
             except Exception as e:
                 logger.error(f"ParseService: Непередбачена помилка при обробці пропозиції {offer_dto.identifier}: {e}",
                              exc_info=True)
 
-        if saved_cars_count > 0:
-            flash(
-                f"Успішно збережено {saved_cars_count} нових авто з {processed_offers_count} знайдених на {src['name']}.",
-                'success')
-        elif parsed_offers:
-            flash(
-                f"Знайдено {processed_offers_count} авто на {src['name']}, але нових для збереження не було (вже існують або не вдалося обробити).",
-                'info')
-
-        return saved_cars_count
+        return saved_cars_count, newly_saved_offer_ids

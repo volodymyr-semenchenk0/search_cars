@@ -2,7 +2,7 @@
 
 {% block content %}
 <hr>
-<form id="searchForm" method="GET" action="{{ url_for('main.index') }}" class="row g-3 mb-4"> {# Додано action для
+<form id="searchForm" method="GET" action="{{ url_for('main.get_history_data') }}" class="row g-3 mb-4"> {# Додано action для
     ясності #}
     <div class="col-md-3">
         <label for="make" class="form-label">Марка</label>
@@ -84,8 +84,7 @@
     </div>
 
     <div class="col-md-3 align-self-end">
-        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary w-100"> {# url_for('main.index') для
-            скидання #}
+        <a href="{{ url_for('main.get_history_data') }}" class="btn btn-outline-secondary w-100">
             Скинути всі
         </a>
     </div>
@@ -117,7 +116,7 @@
         </thead>
         <tbody>
         {% for car in cars %}
-        <tr>
+        <tr id="car-row-{{ car.offer_id }}">
             <td>
                 <input type="checkbox" class="form-check-input compare-checkbox" value="{{ car.offer_id }}"
                        {% if car.offer_id in selected_ids %}checked{% endif %}>
@@ -150,20 +149,20 @@
             </td>
             <td class="text-end">
                 {% if car.customs_payments_total_uah is not none %}
-                {{ car.customs_payments_total_uah | float }} ₴
+                {{ (car.customs_payments_total_uah / car.eur_to_uah_rate_actual ) | round(2) }}
                 {% else %}
                 —
                 {% endif %}
             </td>
             <td class="text-end">
-                {% if car.final_total is not none %}
-                {{ car.final_total | float }} ₴
+                {% if car.final_price_uah is not none %}
+                {{ (car.final_price_uah / car.eur_to_uah_rate_actual) | round(2) }}
                 {% else %}
                 —
                 {% endif %}
             </td>
             <td class="text-end">
-                {% if not car.final_total %}
+                {% if not car.final_price_uah %}
                 <a href="{{ url_for('car.edit_car', id=car.offer_id) }}"
                    class="btn btn-sm btn-outline-primary"
                    title="Редагувати">
@@ -175,22 +174,17 @@
                         data-bs-toggle="modal"
                         data-bs-target="#confirmDeleteModal"
                         data-offer-id="{{ car.offer_id }}"
-                        data-offer-description="{{ car.make_name or 'Авто' }} {{ car.model_name or '' }} ({{ car.production_year or 'Рік не вказано' }})"
-                        title="Видалити">
+                        data-offer-description="{{ car.make_name or 'Авто' }} {{ car.model_name or '' }} ({{ car.production_year or 'Рік не вказано' }})">
                     <i class="bi bi-trash-fill"></i>
                 </button>
-                {% if car.link_to_offer %}
                 <a href="{{ car.link_to_offer }}" target="_blank"
                    class="btn btn-sm btn-primary"
                    title="Перейти на сайт">
                     <i class="bi bi-box-arrow-up-right"></i>
                 </a>
-                {% else %}
-                —
-                {% endif %}
             </td>
         </tr>
-        {% else %} {# Додано блок, якщо список cars порожній #}
+        {% else %}
         <tr>
             <td colspan="12" class="text-center" p="4">За вашими фільтрами автомобілів не знайдено.</td>
         </tr>
@@ -199,26 +193,6 @@
     </table>
 </div>
 
-<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmDeleteModalLabel">Підтвердження видалення</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Ви впевнені, що хочете видалити оголошення <strong id="offerDescriptionToDelete"></strong>?</p>
-                <p>Цю дію неможливо буде скасувати.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                {# Форма буде відправлена методом POST через JavaScript або напряму #}
-                <form id="deleteOfferForm" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">Видалити</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+{% include 'partial/confirm_delete_modal_partial.html' %}
+
 {% endblock %}

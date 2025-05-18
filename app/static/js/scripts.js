@@ -20,7 +20,6 @@ $(function () {
     $.getJSON(`/api/models?make=${makeId}`, function (data) {
       let opts = '<option value="">Оберіть модель</option>';
       data.forEach(m => {
-        // Логіка для попереднього вибору моделі
         const isSelected = (makeId === preselectedMakeId && m.id.toString() === preselectedModelId);
         opts += `<option value="${m.id}" ${isSelected ? 'selected' : ''}>${m.name}</option>`;
       });
@@ -44,28 +43,6 @@ $(function () {
     $('#loader').removeClass('d-flex').addClass('d-none');
   });
 });
-
-// Обробник для модального вікна підтвердження видалення ОГОЛОШЕННЯ
-let confirmDeleteModal = document.getElementById('confirmDeleteModal');
-if (confirmDeleteModal) {
-  confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
-    let button = event.relatedTarget;
-
-    let offerId = button.getAttribute('data-offer-id');
-    let offerDescription = button.getAttribute('data-offer-description');
-
-    let offerDescriptionElement = confirmDeleteModal.querySelector('#offerDescriptionToDelete');
-    if (offerDescriptionElement) {
-      offerDescriptionElement.textContent = offerDescription;
-    }
-
-    let deleteForm = confirmDeleteModal.querySelector('#deleteOfferForm');
-    if (deleteForm) {
-      deleteForm.action = `/cars/${offerId}/delete`;
-    }
-  });
-}
-
 
 $(function () {
   const compareBtn = $('#compareBtn');
@@ -110,5 +87,51 @@ $(function () {
     urlParams.delete('ids');
     const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
     window.history.replaceState(null, '', newUrl);
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('confirmDeleteModal');
+  const deleteForm = modal?.querySelector('#deleteOfferForm');
+  const offerDescriptionEl = modal?.querySelector('#offerDescriptionToDelete');
+  const flashContainer = document.getElementById('flash-messages');
+
+  let currentOfferId = null;
+
+  if (!modal || !deleteForm || !offerDescriptionEl || !flashContainer) return;
+
+  modal.addEventListener('show.bs.modal', event => {
+    const button = event.relatedTarget;
+    currentOfferId = button.getAttribute('data-offer-id');
+    const description = button.getAttribute('data-offer-description');
+
+    offerDescriptionEl.textContent = description || '';
+    deleteForm.dataset.offerId = currentOfferId;
+    deleteForm.action = `/cars/${currentOfferId}/delete`;
+  });
+
+  deleteForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!currentOfferId) return;
+
+    try {
+      const response = await fetch(`/cars/${currentOfferId}/delete`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      const html = await response.text();
+      flashContainer.innerHTML = html;
+
+      const row = document.getElementById(`car-row-${currentOfferId}`);
+      if (row) row.remove();
+
+      bootstrap.Modal.getInstance(modal)?.hide();
+    } catch (error) {
+      console.error('Помилка:', error);
+      flashContainer.innerHTML = `<div class="alert alert-danger">Не вдалося видалити оголошення.</div>`;
+    }
   });
 });

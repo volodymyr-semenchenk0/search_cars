@@ -1,3 +1,4 @@
+from app.repositories import FuelTypeRepository
 from app.services import CarMakeService, CarModelService
 from app.utils.logger_config import logger
 
@@ -66,5 +67,19 @@ def normalize_filters(raw_form_data: dict) -> dict:
     normalized_filters['kmto'] = _clean_and_convert(raw_form_data.get('kmto'), convert_to_int=True)
     normalized_filters['cy'] = _clean_and_convert(raw_form_data.get('cy'))
     normalized_filters['fuel'] = _clean_and_convert(raw_form_data.get('fuel'), lower=True)
+
+    raw_fuel_key_name = raw_form_data.get('fuel')
+    fuel_code_for_parser = None
+
+    if raw_fuel_key_name and isinstance(raw_fuel_key_name, str) and raw_fuel_key_name.strip():
+        cleaned_fuel_key_name = raw_fuel_key_name.strip().lower()
+        try:
+            fuel_code_for_parser = FuelTypeRepository.get_code_by_key_name(cleaned_fuel_key_name)
+            if not fuel_code_for_parser:
+                logger.warning(f"Не знайдено код для типу пального з ключем: '{cleaned_fuel_key_name}'")
+        except Exception as e:
+            logger.error(f"Помилка при отриманні коду типу пального для '{cleaned_fuel_key_name}': {e}")
+
+    normalized_filters['fuel'] = fuel_code_for_parser
 
     return normalized_filters

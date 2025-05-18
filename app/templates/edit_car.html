@@ -11,7 +11,7 @@
             <path fill="currentColor"
                   d="M7.022 1.489a.75.75 0 0 1 1.1 1.022L3.72 7.25H15l.076.004a.75.75 0 0 1 0 1.492L15 8.75H3.72l4.401 4.74.05.059a.75.75 0 0 1-1.094 1.014l-.055-.053-5.572-6a.751.751 0 0 1 0-1.021l5.572-6Z"/>
         </svg>
-        <a href="{{ url_for('main.index') }}">Повернутись до списку</a>
+        <a href="{{ url_for('main.get_history_data') }}">Повернутись до списку</a>
     </div>
 
     <h2>Редагувати автомобіль: {{ car.make_name or car.make or 'Марка не вказана' }} {{ car.model_name or car.model or
@@ -111,7 +111,7 @@
 
 
     <div class="col-12 text-end mt-4">
-        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">Відмінити</a>
+        <a href="{{ url_for('main.get_history_data') }}" class="btn btn-outline-secondary">Відмінити</a>
         <button type="submit" class="btn btn-primary">Зберегти зміни</button>
     </div>
 </form>

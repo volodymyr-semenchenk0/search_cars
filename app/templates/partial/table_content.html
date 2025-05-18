@@ -1,0 +1,113 @@
+{% if cars %}
+<form id="compareForm" class="mb-3">
+    <button type="button" id="compareBtn" class="btn btn-primary" disabled>Порівняти обрані</button>
+    <button type="button" id="resetBtn" class="btn btn-secondary ms-2">Скинути вибір</button>
+</form>
+{% endif %}
+
+<div class="table-responsive table-responsive-lg">
+    <table class="table table-hover table-striped table-sm mb-4" id="carsTable"> {# Оновлено класи для кращого вигляду #}
+        <thead class="table-light"> {# Додано клас для заголовку #}
+        <tr>
+            <th><i class="bi bi-check2-square"></i></th> {# Замість &nbsp; для чекбоксу порівняння #}
+            <th>Марка</th>
+            <th>Модель</th>
+            <th>Рік</th>
+            <th>Пальне</th>
+            <th>Обʼєм/Ємн.</th>
+            <th>Країна</th>
+            <th class="text-end">Ціна, €</th>
+            <th class="text-end">Мито, €</th>
+            <th class="text-end">Фінальна ціна, €</th>
+            <th class="text-end">Дії</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for car in cars %}
+        <tr id="car-row-{{ car.offer_id }}"> {# Додано ID для рядка, може знадобитися для JS #}
+            <td>
+                <input type="checkbox" class="form-check-input compare-checkbox"
+                       value="{{ car.offer_id }}"
+                       {% if car.offer_id in selected_ids_for_compare %}checked{% endif %}>
+                {# selected_ids_for_compare - нова змінна, яку потрібно буде передавати #}
+            </td>
+            <td>{{ car.make_name or '—' }}</td>
+            <td>{{ car.model_name or '—' }}</td>
+            <td>{{ car.production_year or '—' }}</td>
+            <td>{{ car.fuel_type | fuel_label if car.fuel_type else '—' }}</td>
+            <td>
+                {% if car.fuel_type == 'electric' %}
+                {{ car.battery_capacity_kwh if car.battery_capacity_kwh is not none else '—' }} кВт·год
+                {% else %}
+                {{ car.engine_volume_cc if car.engine_volume_cc is not none else '—' }} см³
+                {% endif %}
+            </td>
+            <td>{{ country_names.get(car.country_of_listing) or car.country_of_listing or '—' }}</td>
+            <td class="text-end">
+                {% if car.price is not none %}
+                {{ car.price | float | round(2) }} {{ car.currency or '€' }}
+                {% else %}
+                —
+                {% endif %}
+            </td>
+            <td class="text-end">
+                {% if car.customs_payments_total_uah is not none %}
+                {% if car.eur_to_uah_rate_actual and car.eur_to_uah_rate_actual > 0 %}
+                {{ (car.customs_payments_total_uah / car.eur_to_uah_rate_actual) | round(0) }} €
+                {% else %}
+                {{ car.customs_payments_total_uah | float | round(2) }} ₴
+                {% endif %}
+                {% else %}
+                —
+                {% endif %}
+            </td>
+            <td class="text-end">
+                {% if car.final_total is not none %}
+                {% if car.eur_to_uah_rate_actual and car.eur_to_uah_rate_actual > 0 %}
+                {{ (car.final_total / car.eur_to_uah_rate_actual) | round(0) }} €
+                {% else %}
+                {{ car.final_total | float | round(2) }} ₴
+                {% endif %}
+                {% else %}
+                —
+                {% endif %}
+            </td>
+            <td class="text-end">
+                <a href="{{ url_for('car.edit_car', id=car.offer_id) }}"
+                   class="btn btn-sm btn-outline-primary me-1"
+                   title="Редагувати">
+                    <i class="bi bi-pencil-fill"></i>
+                </a>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger me-1"
+                        data-bs-toggle="modal"
+                        data-bs-target="#confirmDeleteModal"
+                        data-offer-id="{{ car.offer_id }}"
+                        data-offer-description="{{ car.make_name or 'Авто' }} {{ car.model_name or '' }} ({{ car.production_year or 'Рік не вказано' }})"
+                        title="Видалити">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+                {% if car.link_to_offer %}
+                <a href="{{ car.link_to_offer }}" target="_blank"
+                   class="btn btn-sm btn-primary"
+                   title="Перейти на сайт">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            {# Змінено colspan на 11, оскільки тепер 11 колонок #}
+            <td colspan="11" class="text-center py-4"> {# Додано py-4 для відступу #}
+                {% if no_cars_message %}
+                {{ no_cars_message }}
+                {% else %}
+                Автомобілів не знайдено.
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
