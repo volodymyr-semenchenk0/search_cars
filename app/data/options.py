@@ -1,7 +1,9 @@
 from datetime import datetime
 
+
 def get_years_list():
     return list(range(1988, datetime.now().year + 1))[::-1]
+
 
 COUNTRY_NAMES = {
     "DE": "Німеччина",
@@ -27,7 +29,6 @@ MILEAGE_OPTIONS = [
     150000, 175000, 200000
 ]
 
-
 COUNTRY_CODES = {
     "Німеччина": "D",
     "Австрія": "A",
@@ -38,7 +39,6 @@ COUNTRY_CODES = {
     "Люксембург": "L",
     "Нідерланди": "NL"
 }
-
 
 FUEL_TYPES = {
     "gasoline": {
@@ -83,11 +83,14 @@ FUEL_TYPES = {
     }
 }
 
+
 def get_fuel_label(key: str) -> str:
     return FUEL_TYPES.get(key, {}).get('label', key)
 
+
 def get_fuel_code(key: str) -> str:
     return FUEL_TYPES.get(key, {}).get('code', key)
+
 
 BODY_TYPES = {
     "sedan": "Седан",

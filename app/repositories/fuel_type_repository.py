@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from app.db import execute_query
 from app.utils.logger_config import logger
@@ -7,11 +7,6 @@ from app.utils.logger_config import logger
 class FuelTypeRepository:
     @staticmethod
     def get_id_by_key_name(key_name: str) -> Optional[int]:
-        """
-        Отримує ID типу пального за його ключовою назвою (наприклад, 'diesel').
-        Ваша таблиця 'fuel_types' має колонку 'key_name'.
-        Повертає ID типу пального або None, якщо його не знайдено.
-        """
         if not key_name:
             logger.warning("Fuel type key_name is not provided for ID lookup.")
             return None
@@ -26,3 +21,13 @@ class FuelTypeRepository:
         except Exception as e:
             logger.error(f"Помилка при отриманні ID типу пального за key_name '{key_name}': {e}", exc_info=True)
             return None
+
+    @staticmethod
+    def get_all_fuel_types() -> List[Dict[str, Any]]:
+
+        sql = "SELECT key_name, label FROM fuel_types"
+        try:
+            return execute_query(sql)
+        except Exception as e:
+            logger.error(f"Помилка при отриманні всіх типів пального: {e}", exc_info=True)
+            return []

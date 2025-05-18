@@ -35,7 +35,7 @@
                 <li class="nav-item mx-2">
                     <a class="nav-link {% if request.endpoint=='main.index' %}active{% endif %}"
                        href="{{ url_for('main.index') }}">
-                        Список авто
+                        Історія пошуку
                     </a>
                 </li>
                 <li class="nav-item mx-2">
@@ -55,7 +55,7 @@
 </main>
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="container mt-3"> {# Або інше місце для відображення #}
+<div class="flash-messages-container"> {# Обгортка для позиціонування #}
     {% for category, message in messages %}
     <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
         {{ message }}

@@ -5,30 +5,33 @@ $(function () {
   makeSelect.select2({theme: 'bootstrap-5', placeholder: 'Оберіть марку', allowClear: true});
   modelSelect.select2({theme: 'bootstrap-5', placeholder: 'Оберіть модель', allowClear: true});
 
+  const preselectedMakeId = makeSelect.val();
+  const preselectedModelId = decodeURIComponent(modelSelect.data('selected') || '');
+
   makeSelect.on('change', function () {
     const makeId = $(this).val();
-    modelSelect.prop('disabled', true).html('<option value="">Завантаження…</option>').trigger('change');
+    modelSelect.prop('disabled', true).html('<option value="">Завантаження…</option>');
 
     if (!makeId) {
-      modelSelect.html('<option value="">Оберіть модель</option>').prop('disabled', true).trigger('change');
+      modelSelect.html('<option value="">Оберіть модель</option>').prop('disabled', true);
       return;
     }
 
     $.getJSON(`/api/models?make=${makeId}`, function (data) {
       let opts = '<option value="">Оберіть модель</option>';
-      if (data && data.length > 0) {
-        data.forEach(m => {
-          opts += `<option value="${m.id}">${m.name}</option>`;
-        });
-      }
-      modelSelect.html(opts).prop('disabled', false).trigger('change');
-
-    }).fail(function () {
-      modelSelect.html('<option value="">Помилка завантаження</option>').prop('disabled', true).trigger('change');
-      console.error("Помилка отримання моделей.");
+      data.forEach(m => {
+        // Логіка для попереднього вибору моделі
+        const isSelected = (makeId === preselectedMakeId && m.id.toString() === preselectedModelId);
+        opts += `<option value="${m.id}" ${isSelected ? 'selected' : ''}>${m.name}</option>`;
+      });
+      modelSelect.html(opts).prop('disabled', false);
     });
   });
-})
+
+  if (preselectedMakeId) {
+    makeSelect.trigger('change');
+  }
+});
 
 $(function () {
   $('#searchForm').on('submit', function () {
@@ -42,16 +45,26 @@ $(function () {
   });
 });
 
-let deleteModal = document.getElementById('deleteModal');
-deleteModal.addEventListener('show.bs.modal', function (event) {
-  // Кнопка, яка викликала модал
-  let btn = event.relatedTarget;
-  let carId = btn.getAttribute('data-car-id');
+// Обробник для модального вікна підтвердження видалення ОГОЛОШЕННЯ
+let confirmDeleteModal = document.getElementById('confirmDeleteModal');
+if (confirmDeleteModal) {
+  confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+    let button = event.relatedTarget;
 
-  // Змінюємо action форми всередині модала
-  let form = document.getElementById('deleteModalForm');
-  form.action = '/cars/' + carId + '/delete';
-});
+    let offerId = button.getAttribute('data-offer-id');
+    let offerDescription = button.getAttribute('data-offer-description');
+
+    let offerDescriptionElement = confirmDeleteModal.querySelector('#offerDescriptionToDelete');
+    if (offerDescriptionElement) {
+      offerDescriptionElement.textContent = offerDescription;
+    }
+
+    let deleteForm = confirmDeleteModal.querySelector('#deleteOfferForm');
+    if (deleteForm) {
+      deleteForm.action = `/cars/${offerId}/delete`;
+    }
+  });
+}
 
 
 $(function () {

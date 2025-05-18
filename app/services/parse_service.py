@@ -1,10 +1,8 @@
 from flask import flash
 from app.parsers import ParserFactory
 from .source_service import SourceService
-from .car_service import CarService, ServiceError as CarServiceError
-from app.repositories import FuelTypeRepository
-from app.repositories import CarMakeRepository
-from app.repositories import CarModelRepository
+from .offer_service import OfferService, ServiceError as CarServiceError
+from app.repositories import FuelTypeRepository, CarMakeRepository, CarModelRepository
 from app.schemas.parsed_offer import ParsedCarOffer
 from app.utils.logger_config import logger
 
@@ -71,7 +69,7 @@ class ParseService:
                     "raw_fuel_type": offer_dto.fuel_type  # Передаємо ключ типу пального
                 }
 
-                created_offer_id = CarService.add_offer_from_parser(data_for_service)
+                created_offer_id = OfferService.add_offer_from_parser(data_for_service)
                 if created_offer_id:
                     logger.info(
                         f"ParseService: Успішно оброблено та передано на збереження пропозицію {offer_dto.identifier}, new offer_id: {created_offer_id}.")

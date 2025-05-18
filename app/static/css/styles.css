@@ -27,3 +27,16 @@ footer {
         padding-right: 24px;
     }
 }
+
+.flash-messages-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1056;
+    width: auto;
+    max-width: 640px;
+}
+
+.flash-messages-container .alert {
+    margin-bottom: 0.5rem;
+}

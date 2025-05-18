@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict
 
 from app.db import execute_query, get_db_connection
 from app.utils.logger_config import logger
@@ -70,10 +70,25 @@ class CarMakeRepository:
         return CarMakeRepository.create(make_name_clean)
 
     @staticmethod
-    def get_all_makes_for_select() -> list[dict]:
+    def get_all_makes_for_select() -> List[Dict[str, any]]:
         sql = "SELECT id, name FROM car_makes ORDER BY name ASC"
         try:
             return execute_query(sql)
         except Exception as e:
             logger.error(f"Помилка отримання всіх марок для вибору: {e}", exc_info=True)
             return []
+
+
+    @staticmethod
+    def get_name_by_id(make_id: int) -> Optional[str]:
+
+        if not isinstance(make_id, int) or make_id <= 0:
+            logger.warning(f"Некоректний Make ID ({make_id}) надано для пошуку назви.")
+            return None
+        sql = "SELECT name FROM car_makes WHERE id = %s LIMIT 1"
+        try:
+            rows = execute_query(sql, (make_id,))
+            return rows[0]['name'] if rows else None
+        except Exception as e:
+            logger.error(f"Помилка при отриманні назви марки за ID '{make_id}': {e}", exc_info=True)
+            return None

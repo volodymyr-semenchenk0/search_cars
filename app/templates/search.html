@@ -20,28 +20,37 @@
 {% include "loader.html" %}
 <form id="searchForm" method="POST" action="{{ url_for('main.search') }}" class="row g-3">
     <div class="col-md-3">
-        <label for="source" class="form-label">Джерело</label>
-        <select class="form-select" id="source" name="source">
+        <label for="source_id" class="form-label">Джерело</label>
+        <select class="form-select" id="source_id" name="source_id">
             {% for src in sources %}
-            <option value="{{ src.id }}" {% if src.id==1 %}selected{% endif %}>
+            <option value="{{ src.id }}"
+                    {% if selected.source and src.id|string== selected.source %}selected{% endif %}
+            >
                 {{ src.name }}
             </option>
             {% endfor %}
         </select>
     </div>
+
     <div class="col-md-3">
         <label for="make" class="form-label">Марка</label>
         <select class="form-select" id="make" name="make">
             <option value="">Оберіть марку</option>
             {% for make_item in makes %}
-            <option value="{{ make_item.id }}"> {{ make_item.name }}</option>
+            <option value="{{ make_item.id }}"
+                    {% if selected.make and make_item.id|string== selected.make %}selected{% endif %}
+            >
+                {{ make_item.name }}
+            </option>
             {% endfor %}
         </select>
     </div>
 
     <div class="col-md-3">
         <label for="model" class="form-label">Модель</label>
-        <select class="form-select" id="model" name="model" disabled>
+        <select class="form-select" id="model" name="model"
+                {% if not selected.make %}disabled{% endif %} data-selected="{{ selected.model or '' }}"
+        >
             <option value="">Оберіть модель</option>
         </select>
     </div>
@@ -53,7 +62,9 @@
             <select class="form-select me-2" id="pricefrom" name="pricefrom">
                 <option value="">Від</option>
                 {% for p in price_options %}
-                <option value="{{ p }}">
+                <option value="{{ p }}"
+                        {% if selected.pricefrom and p|string== selected.pricefrom %}selected{% endif %}
+                >
                     {{ "{:,}".format(p) }} €
                 </option>
                 {% endfor %}
@@ -62,7 +73,9 @@
             <select class="form-select" id="priceto" name="priceto">
                 <option value="">До</option>
                 {% for p in price_options %}
-                <option value="{{ p }}">
+                <option value="{{ p }}"
+                        {% if selected.priceto and p|string== selected.priceto %}selected{% endif %}
+                >
                     {{ "{:,}".format(p) }} €
                 </option>
                 {% endfor %}
@@ -77,7 +90,9 @@
             <select class="form-select me-2" id="fregfrom" name="fregfrom">
                 <option value="">Від</option>
                 {% for y in years %}
-                <option value="{{ y }}">
+                <option value="{{ y }}"
+                        {% if selected.fregfrom and y|string== selected.fregfrom %}selected{% endif %}
+                >
                     {{ y }}
                 </option>
                 {% endfor %}
@@ -86,7 +101,9 @@
             <select class="form-select" id="fregto" name="fregto">
                 <option value="">До</option>
                 {% for y in years %}
-                <option value="{{ y }}">
+                <option value="{{ y }}"
+                        {% if selected.fregto and y|string== selected.fregto %}selected{% endif %}
+                >
                     {{ y }}
                 </option>
                 {% endfor %}
@@ -101,7 +118,9 @@
             <select class="form-select me-2" id="kmfrom" name="kmfrom">
                 <option value="">Від</option>
                 {% for m in mileage_options %}
-                <option value="{{ m }}">
+                <option value="{{ m }}"
+                        {% if selected.kmfrom and m|string== selected.kmfrom %}selected{% endif %}
+                >
                     {{ "{:,}".format(m) }}
                 </option>
                 {% endfor %}
@@ -111,7 +130,9 @@
             <select class="form-select" id="kmto" name="kmto">
                 <option value="">До</option>
                 {% for m in mileage_options %}
-                <option value="{{ m }}">
+                <option value="{{ m }}"
+                        {% if selected.kmto and m|string== selected.kmto %}selected{% endif %}
+                >
                     {{ "{:,}".format(m) }}
                 </option>
                 {% endfor %}
@@ -123,9 +144,11 @@
         <label for="cy" class="form-label">Країна</label>
         <select class="form-select" id="cy" name="cy">
             <option value="">Усі країни</option>
-            {% for code, name in country_codes.items() %}
-            <option value="{{ name }}">
-                {{ code }}
+            {% for display_name, code_value in country_codes.items() %}
+            <option value="{{ code_value }}"
+                    {% if selected.cy and code_value== selected.cy %}selected{% endif %}
+            >
+                {{ display_name }}
             </option>
             {% endfor %}
         </select>
@@ -135,9 +158,11 @@
         <label for="fuel" class="form-label">Тип пального</label>
         <select id="fuel" name="fuel" class="form-select">
             <option value="">Усі типи</option>
-            {% for key, obj in fuel_types.items() %}
-            <option value="{{ obj.code }}">
-                {{ obj.label }}
+            {% for ft_item in fuel_types %}
+            <option value="{{ ft_item.key_name }}"
+                    {% if selected.fuel and ft_item.key_name == selected.fuel %}selected{% endif %}
+            >
+                {{ ft_item.label }}
             </option>
             {% endfor %}
         </select>

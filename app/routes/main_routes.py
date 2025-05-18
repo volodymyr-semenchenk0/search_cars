@@ -1,15 +1,21 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint
 
-from app.services import CalculateCustomsService
-from app.data.options import FUEL_TYPES, COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
-from app.services import CarMakeService
-from app.services import CarService
-from app.services import ParseService
-from app.services import SourceService
+from app.data.options import COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
+from app.services import (
+    CalculateCustomsService,
+    CarMakeService,
+    FuelTypeService,
+    NBURateService,
+    OfferService,
+    SourceService,
+    ParseService,
+)
 from app.utils.normalize_filters import normalize_filters
-from app.services import NBURateService
 
 main_bp = Blueprint('main', __name__)
+makes = CarMakeService.get_all_makes_for_select()
+fuel_types = FuelTypeService.list_all_fuel_types_for_select()
+
 
 @main_bp.route('/')
 def index():
@@ -19,7 +25,7 @@ def index():
         return redirect(url_for('main.index', **clean_args))
 
     # Парсимо фільтри
-    fields = ("make", "model", "fuel", "year", "country", "sort")
+    fields = ("make", "model", "fuel_type", "year", "country_of_listing", "sort")
     selected = {f: request.args.get(f) for f in fields}
 
     # Парсимо ids для збереження вибраних авто
@@ -29,46 +35,61 @@ def index():
     except ValueError:
         selected_ids = []
 
-    cars = CarService.list_cars(**selected)
+    cars = OfferService.list_cars(**selected)
 
     return render_template(
         'data_table.html',
         cars=cars,
+        makes=makes,
+        fuel_types=fuel_types,
         years=get_years_list(),
-        fuel_types=FUEL_TYPES,
-        price_options=PRICE_OPTIONS,
-        mileage_options=MILEAGE_OPTIONS,
         selected=selected,
-        selected_ids=selected_ids
+        selected_ids=selected_ids,
     )
 
 
 @main_bp.route("/search", methods=['GET', 'POST'])
 def search():
     sources = SourceService.list_sources()
-    db_makes = CarMakeService.get_all_makes_for_select()
 
     if request.method == 'POST':
         data = request.form.to_dict()
-        source_id = int(data.get('source') or data.get('source_id', 0))
         filters = normalize_filters(data)
 
         try:
+            source_id = int(data.get('source_id'))
             ParseService.parse_website(source_id, **filters)
         except Exception as e:
             flash(str(e), 'warning')
 
+        # redirect_params = {k: v for k, v in data.items() if v}
         return redirect(url_for('main.search'))
+
+    selected_filters = {
+        "source_id": request.args.get('source_id'),
+        "make": request.args.get('make'),
+        "model": request.args.get('model'),
+        "pricefrom": request.args.get('pricefrom'),
+        "priceto": request.args.get('priceto'),
+        "fregfrom": request.args.get('fregfrom'),
+        "fregto": request.args.get('fregto'),
+        "kmfrom": request.args.get('kmfrom'),
+        "kmto": request.args.get('kmto'),
+        "cy": request.args.get('cy'),
+        "fuel": request.args.get('fuel'),
+    }
+    selected_filters = {k: v for k, v in selected_filters.items() if v is not None}
 
     return render_template(
         "search.html",
-        makes=db_makes,
+        makes=makes,
         years=get_years_list(),
-        fuel_types=FUEL_TYPES,
+        fuel_types=fuel_types,
         country_codes=COUNTRY_CODES,
         price_options=PRICE_OPTIONS,
         mileage_options=MILEAGE_OPTIONS,
         sources=sources,
+        selected=selected_filters
     )
 
 
@@ -114,7 +135,7 @@ def duty_calc():
         'duty_calc.html',
         params=params,
         result=result,
-        fuel_types=FUEL_TYPES,
+        fuel_types=fuel_types,
         years=get_years_list(),
         eur_rate=eur_rate
     )
@@ -127,6 +148,5 @@ def compare_cars():
         ids = [int(i) for i in ids_param.split(',') if i]
     except ValueError:
         ids = []
-    cars = CarService.get_cars_for_comparison(ids)
-    # Передаємо ids_param назад для відновлення вибору при поверненні
+    cars = OfferService.get_cars_for_comparison(ids)
     return render_template('compare.html', cars=cars, ids_param=ids_param)

@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Tuple, Dict, Any, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -13,10 +14,15 @@ from app.utils.logger_config import logger
 class AutoScout24Parser:
     _searched_cars_count = 0
 
-    def __init__(self, base_url, make, model, pricefrom, priceto, fregfrom, fregto, kmfrom, kmto, cy, fuel,
-                 page_count=1,
-                 ):
+    def __init__(self, base_url: str,
+                 make: Optional[str] = None, model: Optional[str] = None,
+                 pricefrom: Optional[int] = None, priceto: Optional[int] = None,
+                 fregfrom: Optional[int] = None, fregto: Optional[int] = None,
+                 kmfrom: Optional[int] = None, kmto: Optional[int] = None,
+                 cy: Optional[str] = None, fuel: Optional[str] = None,
+                 page_count: int = 5):
         self.base_url = base_url
+
         self.make = make
         self.model = model
         self.pricefrom = pricefrom
@@ -27,10 +33,12 @@ class AutoScout24Parser:
         self.kmto = kmto
         self.cy = cy
         self.fuel = fuel
+
         self.page_count = page_count
 
-    def _configure_url(self) -> tuple[dict[str, str | int], str]:
-        params = {
+    def _configure_url(self) -> Tuple[Dict[str, Any], str]:
+
+        params: Dict[str, Any] = {
             "sort": "standard",
             "desc": "0",
             "ustate": "N,U",
@@ -39,28 +47,35 @@ class AutoScout24Parser:
             "damaged_listing": "exclude",
         }
 
-        if self.fregfrom:
-            params["fregfrom"] = self.fregfrom
-        if self.fregto:
-            params["fregto"] = self.fregto
-        if self.pricefrom:
-            params["pricefrom"] = self.pricefrom
-        if self.priceto:
-            params["priceto"] = self.priceto
-        if self.kmfrom:
-            params["kmfrom"] = self.kmfrom
-        if self.kmto:
-            params["kmto"] = self.kmto
-        if self.cy:
-            params["cy"] = self.cy
-        if self.fuel:
-            params["fuel"] = self.fuel
+        param_mapping = {
+            'fregfrom': 'fregfrom',
+            'fregto': 'fregto',
+            'pricefrom': 'pricefrom',
+            'priceto': 'priceto',
+            'kmfrom': 'kmfrom',
+            'kmto': 'kmto',
+            'cy': 'cy',
+            'fuel': 'fuel',
+        }
 
-        path = "/lst"
+        for attr_name, param_key in param_mapping.items():
+            value = getattr(self, attr_name, None)
+            if value is not None:
+
+                if isinstance(value, str) and not value.strip():
+                    continue
+                params[param_key] = value
+
+        path_segments = ["/lst"]
+
         if self.make:
-            path += f"/{self.make.lower()}"
+            path_segments.append(self.make)
         if self.model:
-            path += f"/{self.model.lower()}"
+
+            if self.make:
+                path_segments.append(self.model)
+
+        path = "/".join(path_segments)
 
         return params, path
 
@@ -169,3 +184,5 @@ class AutoScout24Parser:
         except ValueError:
             logger.warning("Неможливо обробити дату:", year_val)
             return None
+
+   #TODO Валідатор для застосованих фільтрів на сайті

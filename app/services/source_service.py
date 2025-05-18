@@ -1,5 +1,5 @@
 from app.repositories import SourceRepository
-from .car_service import NotFoundError
+from .offer_service import NotFoundError
 
 
 class SourceService:

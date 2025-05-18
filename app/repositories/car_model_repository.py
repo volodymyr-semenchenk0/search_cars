@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict
 
 from app.db import execute_query, get_db_connection
 from app.utils.logger_config import logger
@@ -33,7 +33,12 @@ class CarModelRepository:
         model_name_clean = model_name.strip()
         logger.info(f"Спроба створити нову модель: '{model_name_clean}' для make_id: {make_id}")
 
+        if not make_id:
+            logger.error(f"Не можливо створити модель '{model_name_clean}' без make_id.")
+            return None
+
         conn = None
+        cursor = None
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -75,7 +80,7 @@ class CarModelRepository:
         return CarModelRepository.create(make_id, model_name_clean)
 
     @staticmethod
-    def get_models_by_make_id_for_select(make_id: int) -> list[dict]:
+    def get_models_by_make_id_for_select(make_id: int) -> List[Dict[str, any]]: # Змінив list[dict] на List[Dict[str, any]]
         if not make_id:
             return []
         sql = "SELECT id, name FROM car_models WHERE make_id = %s ORDER BY name ASC"
@@ -84,3 +89,22 @@ class CarModelRepository:
         except Exception as e:
             logger.error(f"Помилка отримання моделей для make_id {make_id}: {e}", exc_info=True)
             return []
+
+    # --- НОВИЙ МЕТОД ---
+    @staticmethod
+    def get_name_by_id(model_id: int) -> Optional[str]:
+        """
+        Отримує назву моделі за її ID.
+        """
+        if not isinstance(model_id, int) or model_id <= 0: # Додав перевірку типу та значення
+            logger.warning(f"Некоректний Model ID ({model_id}) надано для пошуку назви.")
+            return None
+        sql = "SELECT name FROM car_models WHERE id = %s LIMIT 1"
+        try:
+            rows = execute_query(sql, (model_id,))
+            return rows[0]['name'] if rows else None
+        except Exception as e:
+            logger.error(f"Помилка при отриманні назви моделі за ID '{model_id}': {e}", exc_info=True)
+            return None
+    # --- КІНЕЦЬ НОВОГО МЕТОДУ ---
+
