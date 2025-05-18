@@ -1,41 +1,187 @@
 {% extends "base.html" %}
+
+{% block title %}Порівняння автомобілів{% endblock %}
+
 {% block content %}
-<div class="text-center p-4">
-    <h3>Порівняння обраних автомобілів</h3>
-    <a href="{{ url_for('index') }}{% if ids_param %}?ids={{ ids_param }}{% endif %}" class="btn btn-secondary mb-3">Повернутись до списку</a>
-</div>
-<div class="table-responsive">
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-            <th>Марка</th>
-            <th>Модель</th>
-            <th>Рік</th>
-            <th>Тип пального</th>
-            <th>Обʼєм двигуна</th>
-            <th>Ємність акум.</th>
-            <th>Країна</th>
-            <th class="text-end">Ціна, €</th>
-            <th class="text-end">Мито, грн</th>
-            <th class="text-end">Фінальна ціна, грн</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for car in cars %}
-        <tr>
-            <td>{{ car.make or '—' }}</td>
-            <td>{{ car.model or '—' }}</td>
-            <td>{{ car.year or '—' }}</td>
-            <td>{{ car.fuel_type|fuel_label }}</td>
-            <td>{{ car.engine_volume or '-' }}</td>
-            <td>{{ car.battery_capacity_kwh or '-' }}</td>
-            <td>{{ country_names.get(car.country) or car.country or '—' }}</td>
-            <td class="text-end">{{ car.price or '—' }}</td>
-            <td class="text-end">{{ car.customs_uah or '-' }}</td>
-            <td class="text-end">{{ car.final_price_uah or '-' }}</td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+<div class="container my-4">
+    <div class="text-center mb-4">
+        <h3>Порівняння обраних автомобілів</h3>
+        {# Повернення на попередню сторінку (історію) зі збереженням параметрів фільтрації та обраних ID #}
+        <a href="{{ url_for('main.get_history_data', **request.args) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Повернутись до списку
+        </a>
+    </div>
+
+    {% if cars %}
+    <div class="table-responsive">
+        <table class="table table-bordered comparison-table">
+            <thead class="table-light">
+            <tr>
+                <th>Параметр</th>
+                {% for car in cars %}
+                <th class="text-center">
+                    {{ car.make_name or 'N/A' }} {{ car.model_name or 'N/A' }} ({{ car.offer_id }})
+                    {% if car.link_to_offer %}
+                    <a href="{{ car.link_to_offer }}" target="_blank" class="ms-1 small" title="Перейти на сайт оголошення">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    {% endif %}
+                </th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td class="fw-bold">Марка</td>
+                {% for car in cars %}<td>{{ car.make_name or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Модель</td>
+                {% for car in cars %}<td>{{ car.model_name or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Рік</td>
+                {% for car in cars %}<td>{{ car.production_year or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Тип пального</td>
+                {% for car in cars %}<td>{{ car.fuel_type_label or (car.fuel_type | fuel_label) or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Об'єм двигуна</td>
+                {% for car in cars %}
+                <td>
+                    {% if car.fuel_type != 'electric' and car.engine_volume_cc is not none and car.engine_volume_cc > 0 %}
+                    {{ car.engine_volume_cc }} см³
+                    {% elif car.fuel_type != 'electric' and car.engine_volume_cc is not none %}
+                    {{ car.engine_volume_cc }}
+                    {% elif car.fuel_type == 'electric' %}
+                    N/A
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Ємність акумулятора</td>
+                {% for car in cars %}
+                <td>
+                    {% if car.fuel_type == 'electric' and car.battery_capacity_kwh is not none and car.battery_capacity_kwh > 0 %}
+                    {{ car.battery_capacity_kwh }} кВт·год
+                    {% elif car.fuel_type == 'electric' and car.battery_capacity_kwh is not none %}
+                    {{ car.battery_capacity_kwh }}
+                    {% elif car.fuel_type != 'electric' %}
+                    N/A
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Пробіг</td>
+                {% for car in cars %}
+                <td>
+                    {% if car.mileage is not none and car.mileage >= 0 %}
+                    {{ "{:,.0f}".format(car.mileage).replace(",", " ") }} км
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Коробка передач</td>
+                {% for car in cars %}<td>{{ car.transmission or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Привід</td>
+                {% for car in cars %}<td>{{ car.drive or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Тип кузова</td>
+                {% for car in cars %}<td>{{ car.body_type or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Країна оголошення</td>
+                {% for car in cars %}<td>{{ country_names.get(car.country_of_listing) or car.country_of_listing or '—' }}</td>{% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold">Джерело</td>
+                {% for car in cars %}<td>{{ car.source_name or '—' }}</td>{% endfor %}
+            </tr>
+            <tr class="table-group-divider">
+                <td class="fw-bold text-end">Ціна</td>
+                {% for car in cars %}
+                <td class="text-end">
+                    {% if car.price is not none %}
+                    {{ "{:,.2f}".format(car.price).replace(",", " ") }} {{ car.currency or '€' }}
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold text-end">Митні платежі</td>
+                {% for car in cars %}
+                <td class="text-end">
+                    {% if car.customs_payments_total_uah is not none and car.eur_to_uah_rate_actual and car.eur_to_uah_rate_actual > 0 %}
+                    {{ "{:,.0f}".format(car.customs_payments_total_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
+                    <small class="d-block text-muted">({{ "{:,.0f}".format(car.customs_payments_total_uah).replace(",", " ") }} ₴)</small>
+                    {% elif car.customs_payments_total_uah is not none %}
+                    {{ "{:,.0f}".format(car.customs_payments_total_uah).replace(",", " ") }} ₴
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold text-end">Фінальна ціна (з митом, без ПФ)</td>
+                {% for car in cars %}
+                <td class="text-end">
+                    {% set price_val = car.price if car.price is not none else 0 %}
+                    {% set customs_val_uah = car.customs_payments_total_uah if car.customs_payments_total_uah is not none else 0 %}
+                    {% set rate_val = car.eur_to_uah_rate_actual if car.eur_to_uah_rate_actual and (car.eur_to_uah_rate_actual | float) > 0 else 1.0 %}
+
+                    {% if car.price is not none %} {# Ось тут ключова умова #}
+                    {% set final_price_eur = (price_val | float) + ((customs_val_uah | float) / (rate_val | float)) %}
+
+                    {{ "{:,.0f}".format(final_price_eur).replace(",", " ") }} €
+
+                    {% set total_uah_equivalent = ((price_val | float) * (rate_val | float)) + (customs_val_uah | float) %}
+                    <small class="d-block text-muted">({{ "{:,.0f}".format(total_uah_equivalent).replace(",", " ") }} ₴)</small>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold text-end">Фінальна ціна (з усім)</td>
+                {% for car in cars %}
+                <td class="text-end">
+                    {% if car.final_price_uah is not none and car.eur_to_uah_rate_actual and car.eur_to_uah_rate_actual > 0 %}
+                    {{ "{:,.0f}".format(car.final_price_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
+                    <small class="d-block text-muted">({{ "{:,.0f}".format(car.final_price_uah).replace(",", " ") }} ₴)</small>
+                    {% elif car.final_price_uah is not none %}
+                    {{ "{:,.0f}".format(car.final_price_uah).replace(",", " ") }} ₴
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-warning text-center" role="alert">
+        Не обрано автомобілі для порівняння або виникла помилка при завантаженні даних.
+        <a href="{{ url_for('main.get_history_data') }}" class="alert-link">Повернутись до списку</a>.
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

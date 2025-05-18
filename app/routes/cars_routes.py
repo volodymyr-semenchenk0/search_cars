@@ -95,3 +95,27 @@ def delete_car(id):
         logger.error(f'Помилка при AJAX-видаленні ID {id}: {e}', exc_info=True)
 
     return render_template('partial/flash_messages.html')
+
+@car_bp.route('/compare')
+def compare_cars():
+    ids_str = request.args.get('ids')
+    if not ids_str:
+        flash('Не обрано автомобілі для порівняння.', 'warning')
+        return redirect(url_for('main.get_history_data'))
+
+    try:
+        offer_ids = [int(id_val.strip()) for id_val in ids_str.split(',') if id_val.strip().isdigit()]
+    except ValueError:
+        flash('Некоректний формат ID для порівняння.', 'danger')
+        return redirect(url_for('main.get_history_data'))
+
+    if not offer_ids or len(offer_ids) < 1 :
+        flash('Для порівняння потрібно обрати хоча б один автомобіль (зазвичай два або більше).', 'warning')
+
+
+    cars_to_compare = OfferService.get_offers_list_by_ids(offer_ids)
+
+    if not cars_to_compare:
+        flash('Не вдалося знайти обрані автомобілі для порівняння.', 'info')
+
+    return render_template('compare.html', cars=cars_to_compare, ids_param=ids_str)

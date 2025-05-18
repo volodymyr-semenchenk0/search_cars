@@ -51,7 +51,6 @@
         <label for="country" class="form-label">Країна</label>
         <select id="country" name="country" class="form-select">
             <option value="">Усі країни</option>
-            {# country_names передається через context_processor або з маршруту #}
             {% for code, name in country_names.items() %}
             <option value="{{ code }}" {% if selected.country==code %}selected{% endif %}>
                 {{ name }}
@@ -80,7 +79,6 @@
 
     <div class="col-md-3 align-self-end">
         <button type="submit" class="btn btn-outline-primary w-100">Застосувати</button>
-        {# Змінено на type="submit" #}
     </div>
 
     <div class="col-md-3 align-self-end">
@@ -93,7 +91,6 @@
 <form id="compareForm" class="mb-3">
     <button type="button" id="compareBtn" class="btn btn-primary" disabled>Порівняти</button>
     <button type="button" id="resetBtn" class="btn btn-secondary ms-2">Скинути вибрані</button>
-    {# Текст кнопки уточнено #}
 </form>
 <div class="table-responsive table-responsive-lg">
     <table class="table table-md mb-4" id="carsTable">
@@ -104,7 +101,7 @@
             <th>Модель</th>
             <th>Рік</th>
             <th>Тип пального</th>
-            <th>Обʼєм двигуна</th>
+            <th>Обʼєм\Ємн.</th>
             <!--            <th>Ємність акум.</th>-->
             <th>Країна</th>
             <th class="text-end">Ціна, €</th>
@@ -126,20 +123,23 @@
             <td>{{ car.production_year or '—' }}</td>
             <td>{{ car.fuel_type | fuel_label if car.fuel_type else '—' }}</td>
             <td>
-                {% if car.engine_volume_cc is not none %}
-                {{ car.engine_volume_cc }} см³
-                {% else %}
-                —
-                {% endif %}
-            </td>
-            <!--<td>
-                {% if car.battery_capacity_kwh is not none %}
+                {% if car.fuel_type == 'electric' %}
+                {% if car.battery_capacity_kwh is not none and car.battery_capacity_kwh > 0 %}
                 {{ car.battery_capacity_kwh }} кВт·год
                 {% else %}
                 —
                 {% endif %}
-            </td>-->
-            <td>{{ country_names.get(car.country_of_listing) or car.country_of_listing or '—' }}</td>
+                {% else %}
+                {% if car.engine_volume_cc is not none and car.engine_volume_cc > 0 %}
+                {{ car.engine_volume_cc }} см³
+                {% else %}
+                —
+                {% endif %}
+                {% endif %}
+            </td>
+            <td>
+                {{ country_names.get(car.country_of_listing) or car.country_of_listing or '—' }}
+            </td>
             <td class="text-end">
                 {% if car.price is not none %}
                 {{ car.price | float }}

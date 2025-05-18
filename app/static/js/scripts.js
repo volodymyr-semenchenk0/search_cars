@@ -44,51 +44,69 @@ $(function () {
   });
 });
 
-$(function () {
-  const compareBtn = $('#compareBtn');
-  const resetBtn = $('#resetBtn');
-  const table = $('#carsTable');
+const compareBtn = $('#compareBtn');
+const resetBtn = $('#resetBtn');
+const table = $('#carsTable');
 
-  // Парсимо початкові ids з URL
+if (table.length) {
   const urlParams = new URLSearchParams(window.location.search);
   const initialIds = urlParams.get('ids') ? urlParams.get('ids').split(',') : [];
 
-  // Встановлюємо чекбокси за початковим вибором
   table.find('.compare-checkbox').each(function () {
-    if (initialIds.includes(this.value)) $(this).prop('checked', true);
+    if (initialIds.includes(this.value)) {
+      $(this).prop('checked', true);
+    }
   });
 
-  // Оновити стан кнопки
   function updateCompareButton() {
-    const checked = table.find('.compare-checkbox:checked').length;
-    compareBtn.prop('disabled', checked < 2);
+    const checkedCount = table.find('.compare-checkbox:checked').length;
+    compareBtn.prop('disabled', checkedCount < 1);
   }
 
-  // Початковий стан
+
   updateCompareButton();
 
-  // Обробник зміни чекбоксів
-  table.on('change', '.compare-checkbox', updateCompareButton);
+  table.on('change', '.compare-checkbox', function() {
+    updateCompareButton();
+    const currentIds = table.find('.compare-checkbox:checked').map(function () {
+      return this.value;
+    }).get();
 
-  // Натискання на "Порівняти"
+    const urlParamsHandler = new URLSearchParams(window.location.search);
+    if (currentIds.length > 0) {
+      urlParamsHandler.set('ids', currentIds.join(','));
+    } else {
+      urlParamsHandler.delete('ids');
+    }
+    const newUrl = window.location.pathname + '?' + urlParamsHandler.toString();
+
+    window.history.replaceState({path: newUrl}, '', newUrl);
+  });
+
   compareBtn.on('click', function () {
     const ids = table.find('.compare-checkbox:checked').map(function () {
       return this.value;
     }).get();
-    const query = ids.length ? `?ids=${ids.join(',')}` : '';
-    window.location.href = `/compare${query}`;
+
+    if (ids.length > 0) {
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      currentSearchParams.set('ids', ids.join(','));
+
+      window.location.href = `cars/compare?${currentSearchParams.toString()}`;
+    } else {
+      alert('Будь ласка, оберіть автомобілі для порівняння.');
+    }
   });
 
-  // Скинути всі вибрані
   resetBtn.on('click', function () {
     table.find('.compare-checkbox').prop('checked', false);
     updateCompareButton();
-    // Видалити параметр ids з URL без перезавантаження
-    urlParams.delete('ids');
-    const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
-    window.history.replaceState(null, '', newUrl);
+    const urlParamsHandler = new URLSearchParams(window.location.search);
+    urlParamsHandler.delete('ids');
+    const newUrl = window.location.pathname + '?' + urlParamsHandler.toString().replace(/&*$/, ""); // Видаляємо & в кінці, якщо є
+    window.history.replaceState({path: newUrl}, '', newUrl);
   });
-});
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('confirmDeleteModal');

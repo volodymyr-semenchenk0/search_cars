@@ -135,11 +135,11 @@
         <label for="cy" class="form-label">Країна</label>
         <select class="form-select" id="cy" name="cy">
             <option value="">Усі країни</option>
-            {% for display_name, code_value in country_codes.items() %}
-            <option value="{{ code_value }}"
-                    {% if selected.cy and code_value== selected.cy %}selected{% endif %}
+            {% for code, name in country_names.items() %}
+            <option value="{{ code }}"
+                    {% if selected.cy and code== selected.cy %}selected{% endif %}
             >
-                {{ display_name }}
+                {{ name }}
             </option>
             {% endfor %}
         </select>
@@ -196,8 +196,8 @@
                 {{ car.engine_volume_cc if car.engine_volume_cc is not none else '—' }} см³
                 {% endif %}
             </td>
-            <td>{{ country_names.get(car.country_of_listing or car.country) or (car.country_of_listing or car.country)
-                or '—' }}
+            <td>
+                {{ country_names.get(car.country_of_listing) or car.country_of_listing or '—' }}
             </td>
             <td class="text-end">
                 {% if car.price is not none %}
@@ -221,11 +221,13 @@
                 {% endif %}
             </td>
             <td class="text-end">
+                {% if not car.final_price_uah %}
                 <a href="{{ url_for('car.edit_car', id=car.offer_id) }}"
                    class="btn btn-sm btn-outline-primary me-1"
                    title="Редагувати">
                     <i class="bi bi-pencil-fill"></i>
                 </a>
+                {% endif %}
                 <button type="button"
                         class="btn btn-sm btn-outline-danger me-1"
                         data-bs-toggle="modal"
@@ -234,13 +236,11 @@
                         data-offer-description="{{ car.make_name or 'Авто' }} {{ car.model_name or '' }} ({{ car.production_year or 'Рік не вказано' }})">
                     <i class="bi bi-trash-fill"></i>
                 </button>
-                {% if car.link_to_offer %}
                 <a href="{{ car.link_to_offer }}" target="_blank"
                    class="btn btn-sm btn-primary"
                    title="Перейти на сайт">
                     <i class="bi bi-box-arrow-up-right"></i>
                 </a>
-                {% endif %}
             </td>
         </tr>
         {% endfor %}

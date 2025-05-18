@@ -1,6 +1,7 @@
 from app.repositories import FuelTypeRepository
 from app.services import CarMakeService, CarModelService
 from app.utils.logger_config import logger
+from app.repositories import CountryRepository
 
 
 def normalize_filters(raw_form_data: dict) -> dict:
@@ -65,7 +66,17 @@ def normalize_filters(raw_form_data: dict) -> dict:
     normalized_filters['fregto'] = _clean_and_convert(raw_form_data.get('fregto'), convert_to_int=True)
     normalized_filters['kmfrom'] = _clean_and_convert(raw_form_data.get('kmfrom'), convert_to_int=True)
     normalized_filters['kmto'] = _clean_and_convert(raw_form_data.get('kmto'), convert_to_int=True)
-    normalized_filters['cy'] = _clean_and_convert(raw_form_data.get('cy'))
+
+    raw_cy_iso_code_from_form = _clean_and_convert(raw_form_data.get('cy'))
+
+    if raw_cy_iso_code_from_form:
+        parsing_code = CountryRepository.get_parsing_code_by_iso_code(raw_cy_iso_code_from_form)
+        normalized_filters['cy'] = parsing_code if parsing_code else None
+        logger.info(f"Normalized 'cy': from ISO '{raw_cy_iso_code_from_form}' to parser code '{normalized_filters['cy']}'")
+    else:
+        normalized_filters['cy'] = None
+
+
     normalized_filters['fuel'] = _clean_and_convert(raw_form_data.get('fuel'), lower=True)
 
     raw_fuel_key_name = raw_form_data.get('fuel')

@@ -86,7 +86,7 @@ class OfferService:
             model: Optional[str] = None,
             fuel_type: Optional[str] = None,
             year: Optional[int] = None,
-            country_of_listing: Optional[str] = None,
+            country: Optional[str] = None,
             sort: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         try:
@@ -99,7 +99,7 @@ class OfferService:
                 model_id=model_id_int,
                 fuel_type_key=fuel_type,
                 year=year_int,
-                country_of_listing=country_of_listing,
+                country_of_listing=country,
                 sort_by=sort
             )
         except Exception as e:

@@ -1,6 +1,7 @@
 from flask import request, jsonify, Blueprint
+from app.utils.logger_config import logger
 
-from app.services import CarModelService
+from app.services import CarModelService, CountryService
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -17,3 +18,13 @@ def api_models():
 
     models = CarModelService.get_models_for_make_for_select(make_id)
     return jsonify(models)
+
+
+@api_bp.route("/countries")
+def api_countries():
+    try:
+        countries = CountryService.get_countries_for_select()
+        return jsonify(countries)
+    except Exception as e:
+        logger.error(f"API error fetching countries: {e}", exc_info=True)
+        return jsonify({"error": "Could not fetch countries"}), 500

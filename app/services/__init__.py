@@ -6,6 +6,7 @@ from .offer_service import OfferService, ServiceError, NotFoundError
 from .source_service import SourceService
 from .parse_service import ParseService
 from .fuel_type_service import FuelTypeService
+from .country_service import CountryService
 
 __all__ = [
     "NBURateService",
@@ -18,4 +19,5 @@ __all__ = [
     "SourceService",
     "ParseService",
     "FuelTypeService",
+    "CountryService"
 ]

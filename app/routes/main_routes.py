@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint, session
 
-from app.data.options import COUNTRY_CODES, PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
+from app.data.options import PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
 from app.services import (
     CalculateCustomsService,
     CarMakeService,
@@ -25,7 +25,7 @@ def get_history_data():
     if raw_args and raw_args != clean_args:
         return redirect(url_for('main.get_history_data', **clean_args))
 
-    fields = ("make", "model", "fuel_type", "year", "country_of_listing", "sort")
+    fields = ("make", "model", "fuel_type", "year", "country", "sort")
     selected = {f: request.args.get(f) for f in fields}
 
     ids_param = request.args.get('ids', '')
@@ -47,7 +47,7 @@ def get_history_data():
     )
 
 
-@main_bp.route("/search", methods=['GET', 'POST'])
+@main_bp.route("/", methods=['GET', 'POST'])
 def search():
     sources = SourceService.list_sources()
     newly_found_offers = []
@@ -93,7 +93,6 @@ def search():
         makes=makes,
         years=get_years_list(),
         fuel_types=fuel_types,
-        country_codes=COUNTRY_CODES,
         price_options=PRICE_OPTIONS,
         mileage_options=MILEAGE_OPTIONS,
         sources=sources,
@@ -147,14 +146,3 @@ def duty_calc():
         years=get_years_list(),
         eur_rate=eur_rate
     )
-
-
-@main_bp.route('/compare')
-def compare_cars():
-    ids_param = request.args.get('ids', '')
-    try:
-        ids = [int(i) for i in ids_param.split(',') if i]
-    except ValueError:
-        ids = []
-    cars = OfferService.get_cars_for_comparison(ids)
-    return render_template('compare.html', cars=cars, ids_param=ids_param)
