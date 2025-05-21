@@ -166,10 +166,19 @@
 <hr/>
 {% if newly_found_offers %}
 <h3 class="mt-4 mb-3 text-center">Результати пошуку</h3>
+<div class="mb-3 d-flex gap-2">
+    <button type="button" id="compareBtnSearchPage" class="btn btn-primary" disabled>
+        Порівняти обрані
+    </button>
+    <button type="button" id="resetBtnSearchPage" class="btn btn-outline-secondary">
+        Скинути вибір
+    </button>
+</div>
 <div class="table-responsive table-responsive-lg">
-    <table class="table table-md mb-4" id="carsTable">
+    <table class="table table-md mb-4" id="searchResultsTable">
         <thead class="table-light">
         <tr>
+            <th></th>
             <th>Марка</th>
             <th>Модель</th>
             <th>Рік</th>
@@ -185,15 +194,27 @@
         <tbody>
         {% for car in newly_found_offers %}
         <tr id="car-row-{{ car.offer_id }}">
+            <td>
+                <input type="checkbox" class="form-check-input compare-checkbox-search"
+                       value="{{ car.offer_id }}">
+            </td>
             <td>{{ car.make_name or car.make or '—' }}</td>
             <td>{{ car.model_name or car.model or '—' }}</td>
             <td>{{ car.production_year or car.year or '—' }}</td>
             <td>{{ car.fuel_type | fuel_label if car.fuel_type else '—' }}</td>
             <td>
                 {% if car.fuel_type == 'electric' %}
-                {{ car.battery_capacity_kwh if car.battery_capacity_kwh is not none else '—' }} кВт·год
+                {% if car.battery_capacity_kwh is not none and car.battery_capacity_kwh > 0 %}
+                {{ car.battery_capacity_kwh }} кВт·год
                 {% else %}
-                {{ car.engine_volume_cc if car.engine_volume_cc is not none else '—' }} см³
+                —
+                {% endif %}
+                {% else %}
+                {% if car.engine_volume_cc is not none and car.engine_volume_cc > 0 %}
+                {{ car.engine_volume_cc }} см³
+                {% else %}
+                —
+                {% endif %}
                 {% endif %}
             </td>
             <td>
@@ -254,16 +275,4 @@
 {% include 'partial/confirm_delete_modal_partial.html' %}
 {% endif %}
 
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const info = document.getElementById('flash-messages');
-    if (info) {
-      window.history.replaceState(
-        null,
-        document.title,
-        window.location.pathname
-      );
-    }
-  });
-</script>
 {% endblock %}

@@ -59,11 +59,11 @@ class OfferService:
                 if can_calculate:
                     customs_calculator = CalculateCustomsService()
                     calc_results = customs_calculator.calculate(
-                        price_eur=price_eur,
-                        engine_volume_cc=engine_volume_cc,
-                        production_year=production_year,
-                        raw_fuel_type=raw_fuel_type_from_data,
-                        battery_capacity_kwh=battery_capacity_kwh
+                        price_eur,
+                        engine_volume_cc,
+                        production_year,
+                        raw_fuel_type_from_data,
+                        battery_capacity_kwh
                     )
                     if calc_results:
                         CustomsCalculationRepository.save_or_update(offer_id, calc_results)

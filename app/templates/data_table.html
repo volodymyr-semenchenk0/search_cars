@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="row justify-content-center g-4 text-center mb-4">
+    <h2 class="mb-4">Історія пошуку</h2>
+</div>
 <hr>
 <form id="searchForm" method="GET" action="{{ url_for('main.get_history_data') }}" class="row g-3 mb-4"> {# Додано action для
     ясності #}
@@ -90,7 +93,7 @@
 <hr>
 <form id="compareForm" class="mb-3">
     <button type="button" id="compareBtn" class="btn btn-primary" disabled>Порівняти</button>
-    <button type="button" id="resetBtn" class="btn btn-secondary ms-2">Скинути вибрані</button>
+    <button type="button" id="resetBtn" class="btn btn-outline-secondary">Скинути вибрані</button>
 </form>
 <div class="table-responsive table-responsive-lg">
     <table class="table table-md mb-4" id="carsTable">

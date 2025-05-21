@@ -102,31 +102,4 @@
         </div>
     </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const fuelSelect = document.getElementById('fuel_type');
-    const engineInput = document.getElementById('engine_volume');
-    const batteryInput = document.getElementById('battery_capacity_kwh');
-
-    function toggleFields() {
-      if (fuelSelect.value === 'electric') {
-        engineInput.disabled = true;
-        batteryInput.disabled = false;
-      } else {
-        engineInput.disabled = false;
-        batteryInput.disabled = true;
-      }
-    }
-
-    toggleFields();
-    fuelSelect.addEventListener('change', toggleFields);
-
-    const form = document.getElementById('dutyForm');
-    if (document.querySelector('.list-group')) {
-      window.history.replaceState(null, '', window.location.pathname);
-      setTimeout(() => form.reset(), 100);
-    }
-  });
-</script>
 {% endblock %}
