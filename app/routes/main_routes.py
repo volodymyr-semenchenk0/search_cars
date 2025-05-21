@@ -51,7 +51,6 @@ def get_history_data():
 def search():
     sources = SourceService.list_sources()
     newly_found_offers = []
-    # Отримуємо поточні значення фільтрів з форми (для POST) або URL (для GET)
     current_form_values = request.form.to_dict() if request.method == 'POST' else request.args.to_dict()
 
     if request.method == 'POST':
@@ -64,44 +63,31 @@ def search():
 
             if newly_saved_ids:
                 session['newly_found_ids'] = newly_saved_ids
-                # Встановлюємо прапорець, що результати саме з цього POST-запиту
                 session['results_freshly_from_post'] = True
                 flash(f"Збережено {saved_cars_count} нових оголошень.", 'success')
             else:
-                # Якщо нічого не знайдено, очищаємо попередні "свіжі" результати
                 session.pop('newly_found_ids', None)
                 session.pop('results_freshly_from_post', None)
                 flash("Нічого нового не знайдено або все вже є в базі.", 'info')
         except Exception as e:
             flash("Помилка при пошуку", "danger")
             logger.exception(e)
-            # У випадку помилки також очищаємо, щоб не показувати старі дані
             session.pop('newly_found_ids', None)
             session.pop('results_freshly_from_post', None)
 
-        # Редирект зберігає фільтри в URL, але прапорець 'results_freshly_from_post'
-        # буде оброблений у GET-частині
         return redirect(url_for('main.search', **raw_form_data_post))
 
-    else:  # request.method == 'GET'
-        # Отримуємо значення для заповнення фільтрів у шаблоні
-        selected_values_for_template = current_form_values # current_form_values вже містить request.args
+    else:
+        selected_values_for_template = current_form_values
 
-        # Перевіряємо, чи це "свіжий" GET після POST-редиректу
         if session.get('results_freshly_from_post'):
             ids_from_session = session.get('newly_found_ids', [])
             if ids_from_session:
                 newly_found_offers = OfferService.get_offers_list_by_ids(ids_from_session)
-            # Скидаємо прапорець, щоб при наступному GET (наприклад, оновленні сторінки F5)
-            # або переході з іншої сторінки, дані не завантажувалися знову з сесії автоматично.
-            # Результати будуть "прив'язані" до поточних GET-параметрів.
+
             session.pop('results_freshly_from_post', None)
         else:
-            # Якщо це не "свіжий" GET (тобто користувач прийшов з іншої сторінки,
-            # або просто оновив сторінку пошуку без нового POST),
-            # тоді попередні результати з сесії не потрібні.
-            # Фільтри залишаться в URL, але `newly_found_offers` буде порожнім.
-            session.pop('newly_found_ids', None) # Очищаємо ID, якщо це не прямий наслідок POST
+            session.pop('newly_found_ids', None)
 
     return render_template(
         "search.html",

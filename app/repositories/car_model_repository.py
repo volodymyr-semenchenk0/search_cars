@@ -90,7 +90,6 @@ class CarModelRepository:
             logger.error(f"Помилка отримання моделей для make_id {make_id}: {e}", exc_info=True)
             return []
 
-    # --- НОВИЙ МЕТОД ---
     @staticmethod
     def get_name_by_id(model_id: int) -> Optional[str]:
         """
@@ -106,5 +105,4 @@ class CarModelRepository:
         except Exception as e:
             logger.error(f"Помилка при отриманні назви моделі за ID '{model_id}': {e}", exc_info=True)
             return None
-    # --- КІНЕЦЬ НОВОГО МЕТОДУ ---
 

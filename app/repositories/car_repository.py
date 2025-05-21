@@ -7,7 +7,6 @@ from app.utils.logger_config import logger
 class CarRepository:
     @staticmethod
     def create_car_with_powertrain(data: Dict[str, Any], cursor: Any) -> Optional[int]:
-        # ... (існуючий код) ...
         if data.get("model_id") is None:
             logger.error("model_id не надано для створення запису 'cars'.")
             return None
@@ -66,10 +65,8 @@ class CarRepository:
                 logger.warning(f"Для EV (powertrain_id: {powertrain_id}) не надано battery_capacity_kwh.")
         return car_id
 
-
     @staticmethod
     def delete_car_and_dependencies(car_id: int, cursor: Any) -> bool:
-        # ... (існуючий код) ...
         cursor.execute("DELETE FROM cars WHERE id = %s", (car_id,))
         deleted_count = cursor.rowcount
         if deleted_count > 0:
@@ -97,7 +94,6 @@ class CarRepository:
             else:
                 logger.warning(f"CarRepository: Спроба оновити недозволене або невідоме поле '{key}' в 'cars'.")
 
-
         if not set_clauses:
             logger.info(f"Немає дозволених полів для оновлення в 'cars' для car_id {car_id}.")
             return False
@@ -111,18 +107,20 @@ class CarRepository:
             return cursor.rowcount > 0
         except Exception as e:
             logger.error(f"Помилка оновлення полів для car_id {car_id} в 'cars': {e}", exc_info=True)
-            raise # Перекидаємо помилку для обробки транзакцією
+            raise
 
     @staticmethod
     def update_powertrain_mileage(powertrain_id: int, mileage: int, cursor: Any) -> bool:
-        if mileage is None or mileage < 0 : # Пробіг може бути 0
-            logger.warning(f"Некоректне значення пробігу ({mileage}) для powertrain_id {powertrain_id}. Оновлення скасовано.")
+        if mileage is None or mileage < 0:
+            logger.warning(
+                f"Некоректне значення пробігу ({mileage}) для powertrain_id {powertrain_id}. Оновлення скасовано.")
             return False
 
         sql = "UPDATE powertrains SET mileage = %s WHERE id = %s"
         try:
             cursor.execute(sql, (mileage, powertrain_id))
-            logger.info(f"Оновлено пробіг до {mileage} для powertrain_id {powertrain_id}, змінено рядків: {cursor.rowcount}.")
+            logger.info(
+                f"Оновлено пробіг до {mileage} для powertrain_id {powertrain_id}, змінено рядків: {cursor.rowcount}.")
             return cursor.rowcount > 0
         except Exception as e:
             logger.error(f"Помилка оновлення пробігу для powertrain_id {powertrain_id}: {e}", exc_info=True)
@@ -131,49 +129,48 @@ class CarRepository:
     @staticmethod
     def update_powertrain_details(powertrain_id: int, details_data: Dict[str, Any], cursor: Any) -> bool:
         raw_fuel_type = details_data.get('raw_fuel_type', '').lower()
-        updated = False # Флаг, чи відбулись якісь зміни
+        updated = False
 
-        # Оновлення для ДВЗ
         if raw_fuel_type in ('petrol', 'diesel', 'lpg', 'cng', 'ethanol', 'gasoline'):
-            engine_volume_cc = details_data.get('engine_volume_cc') # Може бути None для скидання
+            engine_volume_cc = details_data.get('engine_volume_cc')  # Може бути None для скидання
 
-            # Перевіряємо, чи існує запис
-            cursor.execute("SELECT powertrain_id FROM ice_powertrain_details WHERE powertrain_id = %s", (powertrain_id,))
+            cursor.execute("SELECT powertrain_id FROM ice_powertrain_details WHERE powertrain_id = %s",
+                           (powertrain_id,))
             existing_ice_detail = cursor.fetchone()
 
             if engine_volume_cc is not None:
                 if existing_ice_detail:
                     sql_ice = "UPDATE ice_powertrain_details SET engine_volume_cc = %s WHERE powertrain_id = %s"
                 else:
-                    # Якщо запису немає, а об'єм є, створюємо його
                     sql_ice = "INSERT INTO ice_powertrain_details (engine_volume_cc, powertrain_id) VALUES (%s, %s)"
 
                 try:
                     cursor.execute(sql_ice, (engine_volume_cc, powertrain_id))
-                    logger.info(f"ICE details для powertrain_id {powertrain_id} {'оновлено' if existing_ice_detail else 'створено'} з engine_volume_cc: {engine_volume_cc}.")
-                    updated = True # Була спроба оновлення/вставки
+                    logger.info(
+                        f"ICE details для powertrain_id {powertrain_id} {'оновлено' if existing_ice_detail else 'створено'} з engine_volume_cc: {engine_volume_cc}.")
+                    updated = True
                 except Exception as e:
-                    logger.error(f"Помилка оновлення/вставки ICE details для powertrain_id {powertrain_id}: {e}", exc_info=True)
+                    logger.error(f"Помилка оновлення/вставки ICE details для powertrain_id {powertrain_id}: {e}",
+                                 exc_info=True)
                     raise
-            elif existing_ice_detail: # engine_volume_cc is None, але запис існує - скидаємо на NULL або видаляємо
+            elif existing_ice_detail:
                 sql_ice_null = "UPDATE ice_powertrain_details SET engine_volume_cc = NULL WHERE powertrain_id = %s"
-                # Або: sql_ice_delete = "DELETE FROM ice_powertrain_details WHERE powertrain_id = %s"
                 cursor.execute(sql_ice_null, (powertrain_id,))
                 logger.info(f"ICE details для powertrain_id {powertrain_id} встановлено engine_volume_cc в NULL.")
                 updated = True
 
-            # Якщо це був електро, і тепер стає ДВЗ, треба видалити запис з electric_powertrain_details
             cursor.execute("DELETE FROM electric_powertrain_details WHERE powertrain_id = %s", (powertrain_id,))
             if cursor.rowcount > 0:
-                logger.info(f"Видалено запис з electric_powertrain_details для powertrain_id {powertrain_id} при зміні типу на ДВЗ.")
+                logger.info(
+                    f"Видалено запис з electric_powertrain_details для powertrain_id {powertrain_id} при зміні типу на ДВЗ.")
                 updated = True
 
 
-        # Оновлення для електромобілів
         elif raw_fuel_type == 'electric':
-            battery_capacity_kwh = details_data.get('battery_capacity_kwh') # Може бути None для скидання
+            battery_capacity_kwh = details_data.get('battery_capacity_kwh')  # Може бути None для скидання
 
-            cursor.execute("SELECT powertrain_id FROM electric_powertrain_details WHERE powertrain_id = %s", (powertrain_id,))
+            cursor.execute("SELECT powertrain_id FROM electric_powertrain_details WHERE powertrain_id = %s",
+                           (powertrain_id,))
             existing_electric_detail = cursor.fetchone()
 
             if battery_capacity_kwh is not None:
@@ -183,25 +180,28 @@ class CarRepository:
                     sql_electric = "INSERT INTO electric_powertrain_details (battery_capacity_kwh, powertrain_id) VALUES (%s, %s)"
                 try:
                     cursor.execute(sql_electric, (battery_capacity_kwh, powertrain_id))
-                    logger.info(f"Electric details для powertrain_id {powertrain_id} {'оновлено' if existing_electric_detail else 'створено'} з battery_capacity_kwh: {battery_capacity_kwh}.")
+                    logger.info(
+                        f"Electric details для powertrain_id {powertrain_id} {'оновлено' if existing_electric_detail else 'створено'} з battery_capacity_kwh: {battery_capacity_kwh}.")
                     updated = True
                 except Exception as e:
-                    logger.error(f"Помилка оновлення/вставки Electric details для powertrain_id {powertrain_id}: {e}", exc_info=True)
+                    logger.error(f"Помилка оновлення/вставки Electric details для powertrain_id {powertrain_id}: {e}",
+                                 exc_info=True)
                     raise
-            elif existing_electric_detail: # battery_capacity_kwh is None, але запис існує
+            elif existing_electric_detail:
                 sql_electric_null = "UPDATE electric_powertrain_details SET battery_capacity_kwh = NULL WHERE powertrain_id = %s"
-                # Або: sql_electric_delete = "DELETE FROM electric_powertrain_details WHERE powertrain_id = %s"
                 cursor.execute(sql_electric_null, (powertrain_id,))
-                logger.info(f"Electric details для powertrain_id {powertrain_id} встановлено battery_capacity_kwh в NULL.")
+                logger.info(
+                    f"Electric details для powertrain_id {powertrain_id} встановлено battery_capacity_kwh в NULL.")
                 updated = True
 
-            # Якщо це був ДВЗ, і тепер стає електро, треба видалити запис з ice_powertrain_details
             cursor.execute("DELETE FROM ice_powertrain_details WHERE powertrain_id = %s", (powertrain_id,))
             if cursor.rowcount > 0:
-                logger.info(f"Видалено запис з ice_powertrain_details для powertrain_id {powertrain_id} при зміні типу на електро.")
+                logger.info(
+                    f"Видалено запис з ice_powertrain_details для powertrain_id {powertrain_id} при зміні типу на електро.")
                 updated = True
 
         else:
-            logger.warning(f"Невідомий raw_fuel_type '{raw_fuel_type}' для powertrain_id {powertrain_id}. Оновлення деталей силової установки не виконано.")
+            logger.warning(
+                f"Невідомий raw_fuel_type '{raw_fuel_type}' для powertrain_id {powertrain_id}. Оновлення деталей силової установки не виконано.")
 
-        return updated # Повертає True, якщо була спроба якоїсь зміни
+        return updated
