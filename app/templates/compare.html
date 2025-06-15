@@ -5,11 +5,10 @@
 {% block content %}
 <div class="container my-4">
     <div class="text-center mb-4">
-        <h3>Порівняння обраних автомобілів</h3>
-        {# Повернення на попередню сторінку (історію) зі збереженням параметрів фільтрації та обраних ID #}
-        <a href="{{ url_for('main.get_history_data', **request.args) }}" class="btn btn-outline-secondary">
+        <a href="javascript:history.back()" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Повернутись до списку
         </a>
+        <h3>Порівняння обраних автомобілів</h3>
     </div>
 
     {% if cars %}
@@ -105,19 +104,19 @@
             <tr>
                 <td class="fw-bold">Коробка передач</td>
                 {% for car in cars %}
-                <td>{{ car.transmission or '—' }}</td>
+                <td>{{ car.transmission | transmission_label if car.transmission else '—' }}</td>
                 {% endfor %}
             </tr>
             <tr>
                 <td class="fw-bold">Привід</td>
                 {% for car in cars %}
-                <td>{{ car.drive or '—' }}</td>
+                <td>{{ car.drive | drive_type_label if car.drive else '—' }}</td>
                 {% endfor %}
             </tr>
             <tr>
                 <td class="fw-bold">Тип кузова</td>
                 {% for car in cars %}
-                <td>{{ car.body_type or '—' }}</td>
+                <td>{{ car.body_type | body_type_label if car.body_type else '—' }}</td>
                 {% endfor %}
             </tr>
             <tr>
@@ -133,11 +132,12 @@
                 {% endfor %}
             </tr>
             <tr class="table-group-divider">
-                <td class="fw-bold text-end bg-light">Ціна</td>
+                <td class="fw-bold text-start bg-light">Ціна, €</td>
                 {% for car in cars %}
-                <td class="text-end bg-light">
+                <td class="text-start bg-light">
                     {% if car.price is not none %}
-                    {{ "{:,.2f}".format(car.price).replace(",", " ") }} €
+                    <strong>{{ "{:,.2f}".format(car.price).replace(",", " ") }}</strong>
+                    <small class="d-block text-muted">{{ "{:,.2f}".format(car.price * car.eur_to_uah_rate_actual).replace(",", " ") }} ₴</small>
                     {% else %}
                     —
                     {% endif %}
@@ -145,17 +145,63 @@
                 {% endfor %}
             </tr>
             <tr>
-                <td class="fw-bold text-end bg-light">Митні платежі</td>
+                <td class="text-start">Мито (10%)</td>
                 {% for car in cars %}
-                <td class="text-end bg-light">
-                    {% if car.customs_payments_total_uah is not none and car.eur_to_uah_rate_actual and
-                    car.eur_to_uah_rate_actual > 0 %}
-                    {{ "{:,.2f}".format(car.customs_payments_total_uah / car.eur_to_uah_rate_actual).replace(",", " ")
-                    }} €
-                    <small class="d-block text-muted">({{ "{:,.2f}".format(car.customs_payments_total_uah).replace(",",
-                        " ") }} ₴)</small>
+                <td class="text-start">
+                    {% if car.duty_uah is not none and car.eur_to_uah_rate_actual %}
+                    {{ "{:,.2f}".format(car.duty_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
+                    <small class="d-block text-muted">{{ "{:,.2f}".format(car.duty_uah).replace(",", " ") }} ₴</small>
+                    {% elif car.duty_uah is not none %}
+                    {{ "{:,.2f}".format(car.duty_uah).replace(",", " ") }} ₴
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="text-start">Акцизний податок</td>
+                {% for car in cars %}
+                <td class="text-start">
+                    {% if car.excise_uah is not none and car.eur_to_uah_rate_actual %}
+                    {{ "{:,.2f}".format(car.excise_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
+                    <small class="d-block text-muted">{{ "{:,.2f}".format(car.excise_uah).replace(",", " ") }} ₴</small>
+                    {% elif car.excise_uah is not none %}
+                    {{ "{:,.2f}".format(car.excise_uah).replace(",", " ") }} ₴
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="text-start">ПДВ (20%)</td>
+                {% for car in cars %}
+                <td class="text-start">
+                    {% if car.vat_uah is not none and car.eur_to_uah_rate_actual %}
+                    {{ "{:,.2f}".format(car.vat_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
+                    <small class="d-block text-muted">{{ "{:,.2f}".format(car.vat_uah).replace(",", " ") }} ₴</small>
+                    {% elif car.vat_uah is not none %}
+                    {{ "{:,.2f}".format(car.vat_uah).replace(",", " ") }} ₴
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold text-start bg-light">Загальна сума митних платежів</td>
+                {% for car in cars %}
+                <td class="text-start bg-light">
+                    {% if car.customs_payments_total_uah is not none and car.eur_to_uah_rate_actual %}
+                    <strong>
+                        {{ "{:,.2f}".format(car.customs_payments_total_uah / car.eur_to_uah_rate_actual).replace(",", "
+                        ") }} €
+                    </strong>
+                    <small class="d-block text-muted">{{ "{:,.2f}".format(car.customs_payments_total_uah).replace(",",
+                        " ") }} ₴</small>
                     {% elif car.customs_payments_total_uah is not none %}
-                    {{ "{:,.2f}".format(car.customs_payments_total_uah).replace(",", " ") }} ₴
+                    <strong>{{ "{:,.2f}".format(car.customs_payments_total_uah).replace(",", " ") }} ₴</strong>
                     {% else %}
                     —
                     {% endif %}
@@ -163,24 +209,16 @@
                 {% endfor %}
             </tr>
             <tr>
-                <td class="fw-bold text-end bg-light bg-light">Фінальна ціна (з митом, без ПФ)</td>
+                <td class="text-start">Вартість з розмитненням (без пенс. фонду)</td>
                 {% for car in cars %}
-                <td class="text-end bg-light">
-                    {% set price_val = car.price if car.price is not none else 0 %}
-                    {% set customs_val_uah = car.customs_payments_total_uah if car.customs_payments_total_uah is not
-                    none else 0 %}
-                    {% set rate_val = car.eur_to_uah_rate_actual if car.eur_to_uah_rate_actual and
-                    (car.eur_to_uah_rate_actual | float) > 0 else 1.0 %}
-
-                    {% if car.price is not none %}
-                    {% set final_price_eur = (price_val | float) + ((customs_val_uah | float) / (rate_val | float)) %}
-
-                    {{ "{:,.2f}".format(final_price_eur).replace(",", " ") }} €
-
-                    {% set total_uah_equivalent = ((price_val | float) * (rate_val | float)) + (customs_val_uah | float)
-                    %}
-                    <small class="d-block text-muted">({{ "{:,.2f}".format(total_uah_equivalent).replace(",", " ") }}
-                        ₴)</small>
+                <td class="text-start">
+                    {% if car.final_total_without_pension is not none and car.eur_to_uah_rate_actual %}
+                    {{ "{:,.2f}".format(car.final_total_without_pension / car.eur_to_uah_rate_actual).replace(",", " ")
+                    }} €
+                    <small class="d-block text-muted">{{ "{:,.2f}".format(car.final_total_without_pension).replace(",",
+                        " ") }} ₴</small>
+                    {% elif car.final_total_without_pension is not none %}
+                    {{ "{:,.2f}".format(car.final_total_without_pension).replace(",", " ") }} ₴
                     {% else %}
                     —
                     {% endif %}
@@ -188,14 +226,34 @@
                 {% endfor %}
             </tr>
             <tr>
-                <td class="fw-bold text-end bg-light bg-light">Фінальна ціна (з усім)</td>
+                <td class="text-start">Пенсійний внесок</td>
                 {% for car in cars %}
-                <td class="text-end bg-light">
-                    {% if car.final_price_uah is not none and car.eur_to_uah_rate_actual and car.eur_to_uah_rate_actual > 0 %}
-                    {{ "{:,.2f}".format(car.final_price_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
-                    <small class="d-block text-muted">({{ "{:,.2f}".format(car.final_price_uah).replace(",", " ") }} ₴)</small>
+                <td class="text-start">
+                    {% if car.pension_fee_uah is not none and car.eur_to_uah_rate_actual %}
+                    {{ "{:,.2f}".format(car.pension_fee_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
+                    <small class="d-block text-muted">
+                        {{ "{:,.2f}".format(car.pension_fee_uah).replace(",", " ") }} ₴
+                    </small>
+                    {% elif car.pension_fee_uah is not none %}
+                    {{ "{:,.2f}".format(car.pension_fee_uah).replace(",", " ") }} ₴
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td class="fw-bold text-start bg-light">Фінальна ціна (з усім)</td>
+                {% for car in cars %}
+                <td class="text-start bg-light">
+                    {% if car.final_price_uah is not none and car.eur_to_uah_rate_actual %}
+                    <strong>
+                        {{ "{:,.2f}".format(car.final_price_uah / car.eur_to_uah_rate_actual).replace(",", " ") }} €
+                    </strong>
+                    <small class="d-block text-muted">{{ "{:,.2f}".format(car.final_price_uah).replace(",", " ") }}
+                        ₴</small>
                     {% elif car.final_price_uah is not none %}
-                    {{ "{:,.2f}".format(car.final_price_uah).replace(",", " ") }} ₴
+                    <strong>{{ "{:,.2f}".format(car.final_price_uah).replace(",", " ") }} ₴</strong>
                     {% else %}
                     —
                     {% endif %}

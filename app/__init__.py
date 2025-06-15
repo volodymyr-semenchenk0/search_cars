@@ -6,7 +6,7 @@ from flask import Flask
 from app.routes.api_routes import api_bp
 from app.routes.cars_routes import car_bp
 from app.routes.main_routes import main_bp
-from .data.options import COUNTRY_NAMES, FUEL_TYPES, COUNTRY_CODES, get_fuel_label, get_fuel_code
+from .data.options import get_fuel_label, get_fuel_code, get_transmission_label, get_body_type_label, get_drive_type_label
 from .services import CountryService
 
 load_dotenv()
@@ -39,6 +39,9 @@ def create_app():
 
     app.jinja_env.filters['fuel_label'] = get_fuel_label
     app.jinja_env.filters['fuel_code'] = get_fuel_code
+    app.jinja_env.filters['transmission_label'] = get_transmission_label
+    app.jinja_env.filters['body_type_label'] = get_body_type_label
+    app.jinja_env.filters['drive_type_label'] = get_drive_type_label
 
     app.register_blueprint(main_bp)
     app.register_blueprint(car_bp)

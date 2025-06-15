@@ -288,7 +288,12 @@ class OfferRepository:
                 ice.engine_volume_cc,
                 epd.battery_capacity_kwh,
                 ft.key_name as fuel_type, ft.label as fuel_type_label,
+                cust.duty_uah,
+                cust.excise_uah,
+                cust.vat_uah,
+                cust.pension_fee_uah,
                 cust.customs_payments_total_uah,
+                cust.final_total_without_pension,
                 cust.final_total as final_price_uah,
                 cust.eur_to_uah_rate_actual
             FROM offers o

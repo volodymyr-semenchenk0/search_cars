@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Калькулятор розмитнення{% endblock %}
 {% block content %}
-<div class="container my-5">
-    <h2 class="mb-4 text-center">Калькулятор розмитнення автомобіля</h2>
+<h2 class="mb-4 mb text-center">Калькулятор розмитнення автомобіля</h2>
 
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-6">
-            {% include "loader.html" %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        {% include "loader.html" %}
+        <div class="border p-4 rounded bg-white mt-3">
             <form method="POST" id="dutyForm" class="row g-3">
                 <div class="col-12">
                     <label for="fuel_type" class="form-label">Тип двигуна</label>
                     <select id="fuel_type" name="fuel_type" class="form-select" required>
                         <option value="">Оберіть тип</option>
                         {% for ft_item in fuel_types %}
-                        <option value="{{ ft_item.key_name }}" {% if params.fuel_type==key %}selected{% endif %}>
+                        <option value="{{ ft_item.key_name }}" {% if params.fuel_type==ft_item.key_name %}selected{% endif
+                                %}>
                             {{ ft_item.label }}
                         </option>
                         {% endfor %}
@@ -32,16 +33,15 @@
                     <input type="number" step="any" min="0" id="engine_volume" name="engine_volume"
                            class="form-control"
                            value="{{ params.engine_volume or '' }}"
-                           {% if params.fuel_type=='electric' %}disabled{% endif %}>
+                           {% if params.fuel_type=='electric' %}disabled{% endif %} required>
                 </div>
 
                 <div class="col-12">
                     <label for="battery_capacity_kwh" class="form-label">Ємність батареї (кВт·год)</label>
                     <input type="number" step="any" min="0" id="battery_capacity_kwh" name="battery_capacity_kwh"
                            class="form-control"
-                           class="form-control"
                            value="{{ params.battery_capacity_kwh or '' }}"
-                           {% if params.fuel_type!='electric' %}disabled{% endif %}>
+                           {% if params.fuel_type!='electric' %}disabled{% endif %} required>
                 </div>
 
                 <div class="col-12">
@@ -49,7 +49,7 @@
                     <select id="year" name="year" class="form-select" required>
                         <option value="">Оберіть рік</option>
                         {% for y in years %}
-                        <option value="{{ y }}" {% if params.year==y %}selected{% endif %}>{{ y }}</option>
+                        <option value="{{ y }}" {% if y|string == params.year|string %}selected{% endif %}>{{ y }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -58,48 +58,121 @@
                     <button type="submit" class="btn btn-primary px-5 w-100">Розрахувати</button>
                 </div>
             </form>
-
-            <div class="mt-5">
-                <h4 class="mb-3 text-center">Результат розмитнення</h4>
-                <div class="text-center mb-4">
-                    <p>Курс НБУ: 1 € = {{ eur_rate|default('—') }} ₴</p>
-                </div>
-                <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Вартість авто в гривні</span>
-                        <strong>{{ result.price_uah|default(0) }} ₴</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Мито (10%)</span>
-                        <strong>{{ result.duty_uah|default(0) }} ₴</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Акцизний податок</span>
-                        <strong>{{ result.excise_uah|default(0) }} ₴</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>ПДВ (20%)</span>
-                        <strong>{{ result.vat_uah|default(0) }} ₴</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between bg-light">
-                        <span>Загальна сума митних платежів</span>
-                        <strong>{{ result.customs_payments_total_uah|default(0) }} ₴</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Загальна вартість до пенсійного внеску</span>
-                        <strong>{{ result.final_total_without_pension|default(0) }} ₴</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>Пенсійний внесок</span>
-                        <strong>{{ result.pension_fee_uah|default(0) }} ₴</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between bg-light">
-                        <span>Загальна вартість</span>
-                        <strong>{{ result.final_total|default(0) }} ₴</strong>
-                    </li>
-                </ul>
-            </div>
         </div>
+
+        {% if result %}
+        <div class="mt-5">
+            <h4 class="mb-3 text-center">Результат розрахунку</h4>
+            <div class="text-center mb-4">
+                <p class="text-muted">Курс НБУ: 1 € = {{ eur_rate|default('—') }} ₴</p>
+            </div>
+            <ul class="list-group list-group-flush border rounded">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Вартість авто</span>
+                    <div class="text-end">
+                        {% if params and params.price %}
+                        <strong>{{ "{:,.2f}".format(params.price|float).replace(",", " ") }} €</strong>
+                        <small class="d-block text-muted">{{ "{:,.2f}".format(result.price_uah|float).replace(",", " ")
+                            }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Мито (10%)</span>
+                    <div class="text-end">
+                        {% if result.duty_uah is not none and eur_rate %}
+                        <strong>{{ "{:,.2f}".format((result.duty_uah|float) / (eur_rate|float)).replace(",", " ") }}
+                            €</strong>
+                        <small class="d-block text-muted">{{ "{:,.2f}".format(result.duty_uah|float).replace(",", " ")
+                            }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Акцизний податок</span>
+                    <div class="text-end">
+                        {% if result.excise_uah is not none and eur_rate %}
+                        <strong>{{ "{:,.2f}".format((result.excise_uah|float) / (eur_rate|float)).replace(",", " ") }}
+                            €</strong>
+                        <small class="d-block text-muted">{{ "{:,.2f}".format(result.excise_uah|float).replace(",", "
+                            ") }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>ПДВ (20%)</span>
+                    <div class="text-end">
+                        {% if result.vat_uah is not none and eur_rate %}
+                        <strong>{{ "{:,.2f}".format((result.vat_uah|float) / (eur_rate|float)).replace(",", " ") }}
+                            €</strong>
+                        <small class="d-block text-muted">{{ "{:,.2f}".format(result.vat_uah|float).replace(",", " ")
+                            }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center bg-light fw-bold">
+                    <span>Загальна сума митних платежів</span>
+                    <div class="text-end">
+                        {% if result.customs_payments_total_uah is not none and eur_rate %}
+                        <strong>{{ "{:,.2f}".format((result.customs_payments_total_uah|float) /
+                            (eur_rate|float)).replace(",", " ") }} €</strong>
+                        <small class="d-block text-muted">{{
+                            "{:,.2f}".format(result.customs_payments_total_uah|float).replace(",", " ") }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Загальна вартість до пенсійного внеску</span>
+                    <div class="text-end">
+                        {% if result.final_total_without_pension is not none and eur_rate %}
+                        <strong>{{ "{:,.2f}".format((result.final_total_without_pension|float) /
+                            (eur_rate|float)).replace(",", " ") }} €</strong>
+                        <small class="d-block text-muted">{{
+                            "{:,.2f}".format(result.final_total_without_pension|float).replace(",", " ") }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>Пенсійний внесок</span>
+                    <div class="text-end">
+                        {% if result.pension_fee_uah is not none and eur_rate %}
+                        <strong>{{ "{:,.2f}".format((result.pension_fee_uah|float) / (eur_rate|float)).replace(",", " ")
+                            }} €</strong>
+                        <small class="d-block text-muted">{{
+                            "{:,.2f}".format(result.pension_fee_uah|float).replace(",", " ") }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center bg-light fw-bold">
+                    <span>Загальна вартість</span>
+                    <div class="text-end">
+                        {% if result.final_total is not none and eur_rate %}
+                        <strong>{{ "{:,.2f}".format((result.final_total|float) / (eur_rate|float)).replace(",", " ") }}
+                            €</strong>
+                        <small class="d-block text-muted">{{ "{:,.2f}".format(result.final_total|float).replace(",", "
+                            ") }} ₴</small>
+                        {% else %}
+                        <strong>—</strong>
+                        {% endif %}
+                    </div>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

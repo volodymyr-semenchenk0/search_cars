@@ -4,94 +4,94 @@
 <div class="row justify-content-center g-4 text-center mb-4">
     <h2 class="mb-4">Історія пошуку</h2>
 </div>
-<hr>
-<form id="searchForm" method="GET" action="{{ url_for('main.get_history_data') }}" class="row g-3 mb-4"> {# Додано action для
-    ясності #}
-    <div class="col-md-3">
-        <label for="make" class="form-label">Марка</label>
-        <select class="form-select" id="make" name="make">
-            <option value="">Оберіть марку</option>
-            {% for make_item in makes %}
-            <option value="{{ make_item.id }}" {% if selected.make== make_item.id|string %}selected{% endif %}>
-                {{ make_item.name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+<div class="border p-4 rounded bg-white mt-3">
+    <form id="searchForm" method="GET" action="{{ url_for('main.get_history_data') }}" class="row g-3">
+        <div class="col-md-3">
+            <label for="make" class="form-label">Марка</label>
+            <select class="form-select" id="make" name="make">
+                <option value="">Оберіть марку</option>
+                {% for make_item in makes %}
+                <option value="{{ make_item.id }}" {% if selected.make== make_item.id|string %}selected{% endif %}>
+                    {{ make_item.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div class="col-md-3">
-        <label for="model" class="form-label">Модель</label>
-        <select id="model" name="model" class="form-select" disabled data-selected="{{ selected.model or '' }}">
-            <option value="">Оберіть модель</option>
-        </select>
-    </div>
+        <div class="col-md-3">
+            <label for="model" class="form-label">Модель</label>
+            <select id="model" name="model" class="form-select" disabled data-selected="{{ selected.model or '' }}">
+                <option value="">Оберіть модель</option>
+            </select>
+        </div>
 
-    <div class="col-md-3">
-        <label for="fuel_type" class="form-label">Тип пального</label>
-        <select id="fuel_type" name="fuel_type" class="form-select">
-            <option value="">Усі типи</option>
-            {% for ft_item in fuel_types %}
-            <option value="{{ ft_item.key_name }}" {% if selected.fuel_type== ft_item.key_name %}selected{% endif %}>
-                {{ ft_item.label }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+        <div class="col-md-3">
+            <label for="fuel_type" class="form-label">Тип пального</label>
+            <select id="fuel_type" name="fuel_type" class="form-select">
+                <option value="">Усі типи</option>
+                {% for ft_item in fuel_types %}
+                <option value="{{ ft_item.key_name }}" {% if selected.fuel_type== ft_item.key_name %}selected{% endif
+                        %}>
+                    {{ ft_item.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div class="col-md-3">
-        <label for="year" class="form-label">Рік виробництва</label>
-        <select id="year" name="year" class="form-select">
-            <option value="">Усі роки</option>
-            {% for y in years %} {# years з options.py або маршруту #}
-            <option value="{{ y }}" {% if selected.year== y|string %}selected{% endif %}>
-                {{ y }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+        <div class="col-md-3">
+            <label for="year" class="form-label">Рік виробництва</label>
+            <select id="year" name="year" class="form-select">
+                <option value="">Усі роки</option>
+                {% for y in years %} {# years з options.py або маршруту #}
+                <option value="{{ y }}" {% if selected.year== y|string %}selected{% endif %}>
+                    {{ y }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div class="col-md-3">
-        <label for="country" class="form-label">Країна</label>
-        <select id="country" name="country" class="form-select">
-            <option value="">Усі країни</option>
-            {% for code, name in country_names.items() %}
-            <option value="{{ code }}" {% if selected.country==code %}selected{% endif %}>
-                {{ name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+        <div class="col-md-3">
+            <label for="country" class="form-label">Країна</label>
+            <select id="country" name="country" class="form-select">
+                <option value="">Усі країни</option>
+                {% for code, name in country_names.items() %}
+                <option value="{{ code }}" {% if selected.country==code %}selected{% endif %}>
+                    {{ name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div class="col-md-3">
-        <label for="sort" class="form-label">Сортування</label>
-        <select id="sort" name="sort" class="form-select">
-            <option value="newest" {% if selected.sort=='newest' %}selected{% endif %}>
-                Нові зверху
-            </option>
-            <option value="oldest" {% if selected.sort=='oldest' %}selected{% endif %}>
-                Старі зверху
-            </option>
-            <option value="price_asc" {% if selected.sort=='price_asc' %}selected{% endif %}>
-                Ціна ↑
-            </option>
-            <option value="price_desc" {% if selected.sort=='price_desc' %}selected{% endif %}>
-                Ціна ↓
-            </option>
-        </select>
-    </div>
+        <div class="col-md-3">
+            <label for="sort" class="form-label">Сортування</label>
+            <select id="sort" name="sort" class="form-select">
+                <option value="newest" {% if selected.sort=='newest' %}selected{% endif %}>
+                    Нові зверху
+                </option>
+                <option value="oldest" {% if selected.sort=='oldest' %}selected{% endif %}>
+                    Старі зверху
+                </option>
+                <option value="price_asc" {% if selected.sort=='price_asc' %}selected{% endif %}>
+                    Ціна ↑
+                </option>
+                <option value="price_desc" {% if selected.sort=='price_desc' %}selected{% endif %}>
+                    Ціна ↓
+                </option>
+            </select>
+        </div>
 
-    <div class="col-md-3 align-self-end">
-        <button type="submit" class="btn btn-outline-primary w-100">Застосувати</button>
-    </div>
+        <div class="col-md-3 align-self-end">
+            <button type="submit" class="btn btn-primary w-100">Застосувати</button>
+        </div>
 
-    <div class="col-md-3 align-self-end">
-        <a href="{{ url_for('main.get_history_data') }}" class="btn btn-outline-secondary w-100">
-            Скинути всі
-        </a>
-    </div>
-</form>
-<hr>
-<form id="compareForm" class="mb-3">
+        <div class="col-md-3 align-self-end">
+            <a href="{{ url_for('main.get_history_data') }}" class="btn btn-outline-secondary w-100">
+                Скинути всі
+            </a>
+        </div>
+    </form>
+</div>
+<form id="compareForm" class="mb-3 mt-3">
     <button type="button" id="compareBtn" class="btn btn-primary" disabled>Порівняти</button>
     <button type="button" id="resetBtn" class="btn btn-outline-secondary">Скинути вибрані</button>
 </form>
@@ -105,11 +105,9 @@
             <th>Рік</th>
             <th>Тип пального</th>
             <th>Обʼєм\Ємн.</th>
-            <!--            <th>Ємність акум.</th>-->
+            <th>Пробіг, км</th>
             <th>Країна</th>
             <th class="text-end">Ціна, €</th>
-            <th class="text-end">Митні платежі, €</th>
-            {# Змінено заголовок для узгодженості #}
             <th class="text-end">Фінальна ціна, €</th>
             <th class="text-end">Дії</th>
         </tr>
@@ -141,18 +139,14 @@
                 {% endif %}
             </td>
             <td>
+                {{ "{:,.0f}".format(car.mileage).replace(",", " ") if car.mileage is not none else '—' }}
+            </td>
+            <td>
                 {{ country_names.get(car.country_of_listing) or car.country_of_listing or '—' }}
             </td>
             <td class="text-end">
                 {% if car.price is not none %}
                 {{ car.price | float }}
-                {% else %}
-                —
-                {% endif %}
-            </td>
-            <td class="text-end">
-                {% if car.customs_payments_total_uah is not none %}
-                {{ (car.customs_payments_total_uah / car.eur_to_uah_rate_actual ) | round(2) }}
                 {% else %}
                 —
                 {% endif %}

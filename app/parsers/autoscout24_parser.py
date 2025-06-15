@@ -20,7 +20,7 @@ class AutoScout24Parser:
                  fregfrom: Optional[int] = None, fregto: Optional[int] = None,
                  kmfrom: Optional[int] = None, kmto: Optional[int] = None,
                  cy: Optional[str] = None, fuel: Optional[str] = None,
-                 page_count: int = 1):
+                 page_count: int = 2):
         self.base_url = base_url
 
         self.make = make
@@ -141,6 +141,9 @@ class AutoScout24Parser:
                         "mileage": vehicle.get("mileageInKmRaw"),
                     }
 
+                    if not self._is_listing_valid(car_data_dict):
+                        return []
+
                     if car_data_dict["fuel_type"] == "electric":
                         car_data_dict["battery_capacity_kwh"] = find_battery_capacity(
                             car_data_dict["make"], car_data_dict["model"], car_data_dict["year"]
@@ -185,4 +188,25 @@ class AutoScout24Parser:
             logger.warning("Неможливо обробити дату:", year_val)
             return None
 
-   #TODO Валідатор для застосованих фільтрів на сайті
+    def _is_listing_valid(self, parsed_data: Dict[str, Any]) -> bool:
+
+        if self.make:
+            parsed_make = (parsed_data.get('make') or '').strip().lower().replace(' ', '-')
+            if self.make != parsed_make:
+                logger.warning(
+                    f"Невідповідність марки: фільтр '{self.make}', отримано '{parsed_make}' "
+                    f"для ID {parsed_data.get('identifier')}"
+                )
+                return False
+
+        if self.model:
+            parsed_model = (parsed_data.get('model') or '').strip().lower().replace(' ', '-')
+            if self.model != parsed_model:
+                logger.warning(
+                    f"Невідповідність моделі: фільтр '{self.model}', отримано '{parsed_model}' "
+                    f"для ID {parsed_data.get('identifier')}"
+                )
+                return False
+
+        return True
+

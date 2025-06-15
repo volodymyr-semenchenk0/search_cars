@@ -3,167 +3,166 @@
 {% block content %}
 
 <div class="row justify-content-center g-4 text-center mb-4">
-    <h2 class="mb-4">Форма для пошуку авто на закордонних сайтах</h2>
+    <h2 class="mb-4">Пошук авто на закордонних сайтах</h2>
 </div>
 
-<hr/>
-
 {% include "loader.html" %}
-<form id="searchForm" method="POST" action="{{ url_for('main.search') }}" class="row g-3">
-    <div class="col-md-3">
-        <label for="source_id" class="form-label">Джерело</label>
-        <select class="form-select" id="source_id" name="source_id">
-            {% for src in sources %}
-            <option value="{{ src.id }}"
-                    {% if selected.source and src.id|string== selected.source %}selected{% endif %}
-            >
-                {{ src.name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="col-md-3">
-        <label for="make" class="form-label">Марка</label>
-        <select class="form-select" id="make" name="make">
-            <option value="">Оберіть марку</option>
-            {% for make_item in makes %}
-            <option value="{{ make_item.id }}"
-                    {% if selected.make and make_item.id|string== selected.make %}selected{% endif %}
-            >
-                {{ make_item.name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="col-md-3">
-        <label for="model" class="form-label">Модель</label>
-        <select class="form-select" id="model" name="model"
-                {% if not selected.make %}disabled{% endif %} data-selected="{{ selected.model or '' }}"
-        >
-            <option value="">Оберіть модель</option>
-        </select>
-    </div>
-
-    <div class="col-md-3">
-        <label class="form-label">Ціна (€)</label>
-        <div class="d-flex">
-            <label for="pricefrom"></label>
-            <select class="form-select me-2" id="pricefrom" name="pricefrom">
-                <option value="">Від</option>
-                {% for p in price_options %}
-                <option value="{{ p }}"
-                        {% if selected.pricefrom and p|string== selected.pricefrom %}selected{% endif %}
+<div class="border p-4 rounded bg-white mt-3">
+    <form id="searchForm" method="POST" action="{{ url_for('main.search') }}" class="row g-3">
+        <div class="col-md-3">
+            <label for="source_id" class="form-label">Джерело</label>
+            <select class="form-select" id="source_id" name="source_id">
+                {% for src in sources %}
+                <option value="{{ src.id }}"
+                        {% if selected.source and src.id|string== selected.source %}selected{% endif %}
                 >
-                    {{ "{:,}".format(p) }} €
-                </option>
-                {% endfor %}
-            </select>
-            <label for="priceto"></label>
-            <select class="form-select" id="priceto" name="priceto">
-                <option value="">До</option>
-                {% for p in price_options %}
-                <option value="{{ p }}"
-                        {% if selected.priceto and p|string== selected.priceto %}selected{% endif %}
-                >
-                    {{ "{:,}".format(p) }} €
+                    {{ src.name }}
                 </option>
                 {% endfor %}
             </select>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <label class="form-label">Рік</label>
-        <div class="d-flex">
-            <label for="fregfrom"></label>
-            <select class="form-select me-2" id="fregfrom" name="fregfrom">
-                <option value="">Від</option>
-                {% for y in years %}
-                <option value="{{ y }}"
-                        {% if selected.fregfrom and y|string== selected.fregfrom %}selected{% endif %}
+        <div class="col-md-3">
+            <label for="make" class="form-label">Марка</label>
+            <select class="form-select" id="make" name="make">
+                <option value="">Оберіть марку</option>
+                {% for make_item in makes %}
+                <option value="{{ make_item.id }}"
+                        {% if selected.make and make_item.id|string== selected.make %}selected{% endif %}
                 >
-                    {{ y }}
-                </option>
-                {% endfor %}
-            </select>
-            <label for="fregto"></label>
-            <select class="form-select" id="fregto" name="fregto">
-                <option value="">До</option>
-                {% for y in years %}
-                <option value="{{ y }}"
-                        {% if selected.fregto and y|string== selected.fregto %}selected{% endif %}
-                >
-                    {{ y }}
+                    {{ make_item.name }}
                 </option>
                 {% endfor %}
             </select>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <label class="form-label">Пробіг (км)</label>
-        <div class="d-flex">
-            <label for="kmfrom"></label>
-            <select class="form-select me-2" id="kmfrom" name="kmfrom">
-                <option value="">Від</option>
-                {% for m in mileage_options %}
-                <option value="{{ m }}"
-                        {% if selected.kmfrom and m|string== selected.kmfrom %}selected{% endif %}
-                >
-                    {{ "{:,}".format(m) }}
-                </option>
-                {% endfor %}
+        <div class="col-md-3">
+            <label for="model" class="form-label">Модель</label>
+            <select class="form-select" id="model" name="model"
+                    {% if not selected.make %}disabled{% endif %} data-selected="{{ selected.model or '' }}"
+            >
+                <option value="">Оберіть модель</option>
             </select>
+        </div>
 
-            <label for="kmto"></label>
-            <select class="form-select" id="kmto" name="kmto">
-                <option value="">До</option>
-                {% for m in mileage_options %}
-                <option value="{{ m }}"
-                        {% if selected.kmto and m|string== selected.kmto %}selected{% endif %}
+        <div class="col-md-3">
+            <label class="form-label">Ціна (€)</label>
+            <div class="d-flex">
+                <label for="pricefrom"></label>
+                <select class="form-select me-2" id="pricefrom" name="pricefrom">
+                    <option value="">Від</option>
+                    {% for p in price_options %}
+                    <option value="{{ p }}"
+                            {% if selected.pricefrom and p|string== selected.pricefrom %}selected{% endif %}
+                    >
+                        {{ "{:,}".format(p) }} €
+                    </option>
+                    {% endfor %}
+                </select>
+                <label for="priceto"></label>
+                <select class="form-select" id="priceto" name="priceto">
+                    <option value="">До</option>
+                    {% for p in price_options %}
+                    <option value="{{ p }}"
+                            {% if selected.priceto and p|string== selected.priceto %}selected{% endif %}
+                    >
+                        {{ "{:,}".format(p) }} €
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Рік</label>
+            <div class="d-flex">
+                <label for="fregfrom"></label>
+                <select class="form-select me-2" id="fregfrom" name="fregfrom">
+                    <option value="">Від</option>
+                    {% for y in years %}
+                    <option value="{{ y }}"
+                            {% if selected.fregfrom and y|string== selected.fregfrom %}selected{% endif %}
+                    >
+                        {{ y }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <label for="fregto"></label>
+                <select class="form-select" id="fregto" name="fregto">
+                    <option value="">До</option>
+                    {% for y in years %}
+                    <option value="{{ y }}"
+                            {% if selected.fregto and y|string== selected.fregto %}selected{% endif %}
+                    >
+                        {{ y }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Пробіг (км)</label>
+            <div class="d-flex">
+                <label for="kmfrom"></label>
+                <select class="form-select me-2" id="kmfrom" name="kmfrom">
+                    <option value="">Від</option>
+                    {% for m in mileage_options %}
+                    <option value="{{ m }}"
+                            {% if selected.kmfrom and m|string== selected.kmfrom %}selected{% endif %}
+                    >
+                        {{ "{:,}".format(m) }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <label for="kmto"></label>
+                <select class="form-select" id="kmto" name="kmto">
+                    <option value="">До</option>
+                    {% for m in mileage_options %}
+                    <option value="{{ m }}"
+                            {% if selected.kmto and m|string== selected.kmto %}selected{% endif %}
+                    >
+                        {{ "{:,}".format(m) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <label for="cy" class="form-label">Країна</label>
+            <select class="form-select" id="cy" name="cy">
+                <option value="">Усі країни</option>
+                {% for code, name in country_names.items() %}
+                <option value="{{ code }}"
+                        {% if selected.cy and code== selected.cy %}selected{% endif %}
                 >
-                    {{ "{:,}".format(m) }}
+                    {{ name }}
                 </option>
                 {% endfor %}
             </select>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <label for="cy" class="form-label">Країна</label>
-        <select class="form-select" id="cy" name="cy">
-            <option value="">Усі країни</option>
-            {% for code, name in country_names.items() %}
-            <option value="{{ code }}"
-                    {% if selected.cy and code== selected.cy %}selected{% endif %}
-            >
-                {{ name }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+        <div class="col-md-3">
+            <label for="fuel" class="form-label">Тип пального</label>
+            <select id="fuel" name="fuel" class="form-select">
+                <option value="">Усі типи</option>
+                {% for ft_item in fuel_types %}
+                <option value="{{ ft_item.key_name }}"
+                        {% if selected.fuel and ft_item.key_name== selected.fuel %}selected{% endif %}
+                >
+                    {{ ft_item.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
 
-    <div class="col-md-3">
-        <label for="fuel" class="form-label">Тип пального</label>
-        <select id="fuel" name="fuel" class="form-select">
-            <option value="">Усі типи</option>
-            {% for ft_item in fuel_types %}
-            <option value="{{ ft_item.key_name }}"
-                    {% if selected.fuel and ft_item.key_name== selected.fuel %}selected{% endif %}
-            >
-                {{ ft_item.label }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="col-md-3 align-self-end">
-        <button id="searchBtn" type="submit" class="btn btn-primary w-100">Пошук на AutoScout24</button>
-    </div>
-</form>
-<hr/>
+        <div class="col-md-3 offset-md-9 mt-3">
+            <button id="searchBtn" type="submit" class="btn btn-primary w-100">Пошук на AutoScout24</button>
+        </div>
+    </form>
+</div>
 {% if newly_found_offers %}
 <h3 class="mt-4 mb-3 text-center">Результати пошуку</h3>
 <div class="mb-3 d-flex gap-2">
@@ -179,14 +178,15 @@
         <thead class="table-light">
         <tr>
             <th></th>
-            <th>Марка</th>
             <th>Модель</th>
             <th>Рік</th>
+            <th>Пробіг, км</th>
             <th>Пальне</th>
             <th>Обʼєм/Ємн.</th>
+            <th>Трансмісія</th>
+            <th>Тип кузова</th>
             <th>Країна</th>
             <th class="text-end">Ціна, €</th>
-            <th class="text-end">Митні платежі, €</th>
             <th class="text-end">Фінальна ціна, €</th>
             <th class="text-end">Дії</th>
         </tr>
@@ -198,41 +198,24 @@
                 <input type="checkbox" class="form-check-input compare-checkbox-search"
                        value="{{ car.offer_id }}">
             </td>
-            <td>{{ car.make_name or car.make or '—' }}</td>
             <td>{{ car.model_name or car.model or '—' }}</td>
             <td>{{ car.production_year or car.year or '—' }}</td>
+            <td>{{ "{:,.0f}".format(car.mileage).replace(",", " ") if car.mileage is not none else '—' }}</td>
             <td>{{ car.fuel_type | fuel_label if car.fuel_type else '—' }}</td>
             <td>
                 {% if car.fuel_type == 'electric' %}
-                {% if car.battery_capacity_kwh is not none and car.battery_capacity_kwh > 0 %}
                 {{ car.battery_capacity_kwh }} кВт·год
                 {% else %}
-                —
-                {% endif %}
-                {% else %}
-                {% if car.engine_volume_cc is not none and car.engine_volume_cc > 0 %}
                 {{ car.engine_volume_cc }} см³
-                {% else %}
-                —
-                {% endif %}
                 {% endif %}
             </td>
+            <td>{{ car.transmission | transmission_label if car.transmission else '—' }}</td>
+            <td>{{ car.body_type | body_type_label if car.body_type else '—' }}</td>
             <td>
                 {{ country_names.get(car.country_of_listing) or car.country_of_listing or '—' }}
             </td>
             <td class="text-end">
-                {% if car.price is not none %}
-                {{ car.price | round(2) }}
-                {% else %}
-                —
-                {% endif %}
-            </td>
-            <td class="text-end">
-                {% if car.customs_payments_total_uah is not none %}
-                {{ (car.customs_payments_total_uah / car.eur_to_uah_rate_actual) | round(2) }}
-                {% else %}
-                —
-                {% endif %}
+                {{ car.price | round(2) if car.price is not none else '—' }}
             </td>
             <td class="text-end">
                 {% if car.final_price_uah is not none %}

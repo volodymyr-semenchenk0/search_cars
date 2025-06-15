@@ -83,6 +83,39 @@ FUEL_TYPES = {
     }
 }
 
+BODY_TYPES = {
+    'Compact': 'Компакт',
+    'Convertible': 'Кабріолет',
+    'Coupe': 'Купе',
+    'Off-Road/Pick-up': 'Позашляховик/Пікап',
+    'SUV/Off-Road': 'Позашляховик/SUV',
+    'Station wagon': 'Універсал',
+    'Sedans': 'Седан',
+    'Van': 'Вен/Фургон',
+    'Transporter': 'Транспортер',
+    'Other': 'Інше',
+    'Sedan': 'Седан',
+    'Station Wagon': 'Універсал',
+    'Van/Minibus': 'Вен/Мінівен',
+    "Cabriolet/Roadster": "Кабріолет/Родстер"
+}
+
+TRANSMISSIONS = {
+    'Automatic': 'Автоматична',
+    'Manual': 'Механічна',
+    'Semi-automatic': 'Напівавтоматична'
+}
+
+DRIVE_TYPES = {
+    "Fwd": "Передній",
+    "Rwd": "Задній",
+    "Awd": "Повний",
+    "4wd": "Повний",
+    "Front": "Передній",
+    "Rear": "Задній",
+    "All": "Повний"
+}
+
 
 def get_fuel_label(key: str) -> str:
     return FUEL_TYPES.get(key, {}).get('label', key)
@@ -92,29 +125,12 @@ def get_fuel_code(key: str) -> str:
     return FUEL_TYPES.get(key, {}).get('code', key)
 
 
-BODY_TYPES = {
-    "sedan": "Седан",
-    "hatchback": "Хетчбек",
-    "coupe": "Купе",
-    "suv": "Позашляховик",
-    "convertible": "Кабріолет",
-    "wagon": "Універсал",
-    "van": "Мінівен",
-    "pickup": "Пікап",
-}
+def get_transmission_label(key: str) -> str:
+    return TRANSMISSIONS.get(key, key)
 
-TRANSMISSIONS = {
-    "manual": "Механічна",
-    "automatic": "Автоматична",
-    "semiautomatic": "Напівавтоматична"
-}
 
-DRIVE_TYPES = {
-    "fwd": "Передній",
-    "rwd": "Задній",
-    "awd": "Повний",
-    "4wd": "Повний",
-    "front": "Передній",
-    "rear": "Задній",
-    "all": "Повний"
-}
+def get_body_type_label(key: str) -> str:
+    return BODY_TYPES.get(key, key)
+
+def get_drive_type_label(key: str) -> str:
+    return DRIVE_TYPES.get(key, key)
