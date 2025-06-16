@@ -29,8 +29,12 @@ class NBURateService:
 
         logger.info(f"Оновлюю курс євро з API НБУ для дати: {date_str}")
         try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+            }
             response = requests.get(
                 f"https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&date={date_str}&json",
+                headers=headers,
                 timeout=5
             )
             response.raise_for_status()

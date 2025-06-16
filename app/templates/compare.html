@@ -78,11 +78,11 @@
                 <td>
                     {% if car.fuel_type == 'electric' and car.battery_capacity_kwh is not none and
                     car.battery_capacity_kwh > 0 %}
-                    {{ car.battery_capacity_kwh }} кВт·год
+                    {{ car.battery_capacity_kwh }} кВт-год
                     {% elif car.fuel_type == 'electric' and car.battery_capacity_kwh is not none %}
                     {{ car.battery_capacity_kwh }}
                     {% elif car.fuel_type != 'electric' %}
-                    N/A
+                    —
                     {% else %}
                     —
                     {% endif %}
@@ -137,7 +137,9 @@
                 <td class="text-start bg-light">
                     {% if car.price is not none %}
                     <strong>{{ "{:,.2f}".format(car.price).replace(",", " ") }}</strong>
+                    {% if car.eur_to_uah_rate_actual %}
                     <small class="d-block text-muted">{{ "{:,.2f}".format(car.price * car.eur_to_uah_rate_actual).replace(",", " ") }} ₴</small>
+                    {% endif %}
                     {% else %}
                     —
                     {% endif %}

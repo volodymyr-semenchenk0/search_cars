@@ -90,7 +90,7 @@ class AutoScout24Parser:
             logger.info(f"Parsing page {page}: {url}")
 
             try:
-                response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+                response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
                 response.raise_for_status()
             except requests.RequestException as e:
                 logger.error(f"Не вдалося отримати сторінку {url}: {e}")
