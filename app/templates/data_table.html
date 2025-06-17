@@ -63,7 +63,7 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Ціна (€)</label>
+            <label class="form-label">Вартість, €</label>
             <div class="d-flex">
                 <select class="form-select me-2" name="price_min">
                     <option value="">Від</option>
@@ -144,10 +144,10 @@
                     Старі зверху
                 </option>
                 <option value="price_asc" {% if selected.sort=='price_asc' %}selected{% endif %}>
-                    Ціна ↑
+                    Вартість ↓
                 </option>
                 <option value="price_desc" {% if selected.sort=='price_desc' %}selected{% endif %}>
-                    Ціна ↓
+                    Вартість ↑
                 </option>
             </select>
         </div>
@@ -157,7 +157,7 @@
             <select id="drive" name="drive" class="form-select">
                 <option value="">Усі типи</option>
                 {% for key, label in drive_types.items() %}
-                <option value="{{ key }}" {% if selected.drive == key %}selected{% endif %}>
+                <option value="{{ key }}" {% if selected.drive== key %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
@@ -175,12 +175,23 @@
         </div>
     </form>
 </div>
-<form id="compareForm" class="mb-3 mt-3">
-    <button type="button" id="compareBtn" class="btn btn-primary" disabled>Порівняти</button>
-    <button type="button" id="resetBtn" class="btn btn-outline-secondary">Скинути вибрані</button>
-</form>
+<div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <div>
+        <button type="button" id="compareBtn" class="btn btn-primary" disabled>
+            Порівняти
+        </button>
+        <button type="button" id="resetBtn" class="btn btn-outline-secondary">
+            Скинути вибрані
+        </button>
+    </div>
+    <div>
+        {% if cars %}
+        <span class="text-muted">Всього збережено: <strong>{{ cars|length }}</strong></span>
+        {% endif %}
+    </div>
+</div>
 <div class="table-responsive table-responsive-lg">
-    <table class="table table-md mb-4" id="carsTable">
+    <table class="table table-md mb-4 table-hover" id="carsTable">
         <thead>
         <tr>
             <th>&nbsp;</th>

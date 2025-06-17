@@ -1,4 +1,3 @@
-# app/repositories/offer_repository.py
 from typing import Optional, Dict, Any, List
 
 from app.db import execute_query, get_db_connection
@@ -7,6 +6,66 @@ from app.utils.logger_config import logger
 
 
 class OfferRepository:
+
+    @staticmethod
+    def get_existing_identifiers_for_source(source_id: int) -> set:
+        sql = "SELECT offer_identifier FROM offers WHERE source_id = %s"
+        try:
+            rows = execute_query(sql, (source_id,))
+            return {row['offer_identifier'] for row in rows}
+        except Exception as e:
+            logger.error(f"Помилка отримання ідентифікаторів для source_id {source_id}: {e}", exc_info=True)
+            return set()
+
+    @staticmethod
+    def bulk_create_full_offers_with_details(offers_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        conn = None
+        cursor = None
+        created_offers_with_data = []
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            conn.start_transaction()
+
+            for data in offers_data:
+                car_id = CarRepository.create_car_with_powertrain(data, cursor)
+                if not car_id:
+                    logger.error(f"Не вдалося створити 'car' для пропозиції {data.get('offer_identifier')}. Відкат транзакції.")
+                    conn.rollback()
+                    return []
+
+                sql_offers = """
+                             INSERT INTO offers (offer_identifier, car_id, source_id, link_to_offer,
+                                                 price, currency, country_of_listing)
+                             VALUES (%s, %s, %s, %s, %s, %s, %s)
+                             """
+                offer_params = (
+                    data.get("offer_identifier"), car_id, data.get("source_id"),
+                    str(data.get("link_to_offer")), data.get("price"), data.get("currency"),
+                    data.get("country_of_listing")
+                )
+                cursor.execute(sql_offers, offer_params)
+                offer_id = cursor.lastrowid
+
+                created_offer_info = data.copy()
+                created_offer_info['offer_id'] = offer_id
+                created_offers_with_data.append(created_offer_info)
+
+            conn.commit()
+            logger.info(f"Успішно створено {len(created_offers_with_data)} пропозицій в одній транзакції.")
+            return created_offers_with_data
+
+        except Exception as e:
+            if conn and conn.is_connected():
+                conn.rollback()
+            logger.error(f"Помилка при масовому створенні пропозицій (OfferRepository): {e}", exc_info=True)
+            return []
+        finally:
+            if cursor:
+                cursor.close()
+            if conn and conn.is_connected():
+                conn.close()
+
     @staticmethod
     def exists(offer_identifier: str, source_id: int) -> bool:
         if not offer_identifier or not source_id:

@@ -15,6 +15,54 @@ class ServiceError(Exception):
 
 
 class OfferService:
+
+    @staticmethod
+    def bulk_add_offers_from_parser(offers_data: List[Dict[str, Any]]) -> List[int]:
+
+        if not offers_data:
+            return []
+
+        try:
+            created_offers = OfferRepository.bulk_create_full_offers_with_details(offers_data)
+
+            if not created_offers:
+                logger.warning("OfferService: Масове створення не повернуло жодної створеної пропозиції.")
+                return []
+
+            customs_calculator = CalculateCustomsService()
+            for offer_details in created_offers:
+                offer_id = offer_details.get("offer_id")
+                price_eur = offer_details.get("price")
+                engine_volume_cc = offer_details.get("engine_volume_cc")
+                production_year = offer_details.get("production_year")
+                raw_fuel_type = offer_details.get("raw_fuel_type")
+                battery_capacity_kwh = offer_details.get("battery_capacity_kwh")
+
+                can_calculate = False
+                if price_eur is not None and production_year is not None and raw_fuel_type is not None:
+                    if raw_fuel_type.lower() == "electric":
+                        if battery_capacity_kwh is not None:
+                            can_calculate = True
+                    else:
+                        if engine_volume_cc is not None:
+                            can_calculate = True
+
+                if can_calculate:
+                    calc_results = customs_calculator.calculate(
+                        price_eur, engine_volume_cc, production_year, raw_fuel_type, battery_capacity_kwh
+                    )
+                    if calc_results:
+                        CustomsCalculationRepository.save_or_update(offer_id, calc_results)
+                        logger.info(f"Розрахунки мита для offer_id {offer_id} (створеного масово) збережено.")
+                else:
+                    logger.warning(f"Недостатньо даних для розрахунку мита для offer_id {offer_id}, створеного масово.")
+
+            return [offer['offer_id'] for offer in created_offers]
+
+        except Exception as e:
+            logger.error(f"OfferService: Помилка при масовому додаванні пропозицій: {e}", exc_info=True)
+            raise ServiceError(f"Помилка сервісу при масовому додаванні пропозицій: {e}")
+
     @staticmethod
     def add_offer_from_parser(data: Dict[str, Any]) -> Optional[int]:
         try:

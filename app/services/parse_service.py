@@ -1,5 +1,5 @@
 from app.parsers import ParserFactory
-from app.repositories import FuelTypeRepository, CarMakeRepository, CarModelRepository
+from app.repositories import FuelTypeRepository, CarMakeRepository, CarModelRepository, OfferRepository
 from app.schemas.parsed_offer import ParsedCarOffer
 from app.utils.logger_config import logger
 from .offer_service import OfferService, ServiceError as OfferServiceError
@@ -21,38 +21,45 @@ class ParseService:
             logger.info(f"Парсер для {src['name']} не повернув жодних пропозицій за фільтрами.")
             return 0, []
 
-        saved_cars_count = 0
-        processed_offers_count = 0
-        newly_saved_offer_ids = []
+        try:
+            existing_identifiers = OfferRepository.get_existing_identifiers_for_source(source_id)
+        except Exception as e:
+            logger.error(f"Не вдалося отримати існуючі ідентифікатори. Помилка: {e}", exc_info=True)
+            return 0, []
 
-        for offer_dto in parsed_offers:
-            processed_offers_count += 1
+        processed_in_this_batch = set()
+        new_parsed_offers = []
+        for offer in parsed_offers:
+            if offer.identifier not in existing_identifiers and offer.identifier not in processed_in_this_batch:
+                new_parsed_offers.append(offer)
+                processed_in_this_batch.add(offer.identifier)
+
+        if not new_parsed_offers:
+            logger.info("Всі знайдені пропозиції вже існують в базі даних або є дублікатами.")
+            return 0, []
+
+        logger.info(f"Знайдено {len(new_parsed_offers)} унікальних нових пропозицій для збереження.")
+
+        offers_to_create = []
+        for offer_dto in new_parsed_offers:
             try:
-                make_id = None
-                if offer_dto.make:
-                    make_id = CarMakeRepository.get_or_create_id(offer_dto.make)
+                make_id = CarMakeRepository.get_or_create_id(offer_dto.make) if offer_dto.make else None
+                model_id = CarModelRepository.get_or_create_id(make_id,
+                                                               offer_dto.model) if make_id and offer_dto.model else None
 
-                model_id = None
-                if make_id and offer_dto.model:
-                    model_id = CarModelRepository.get_or_create_id(make_id, offer_dto.model)
-
-                fuel_type_id = None
-                if offer_dto.fuel_type:
-                    fuel_type_id = FuelTypeRepository.get_id_by_key_name(offer_dto.fuel_type)
-
-                if offer_dto.make and not make_id:
+                if not model_id:
                     logger.warning(
-                        f"ParseService: Не вдалося отримати/створити make_id для '{offer_dto.make}'. Пропуск: {offer_dto.identifier}")
+                        f"ParseService: Не вдалося визначити model_id для пропозиції "
+                        f"'{offer_dto.identifier}' (make: '{offer_dto.make}', model: '{offer_dto.model}'). Пропуск.")
                     continue
-                if offer_dto.model and not model_id and make_id:
-                    logger.warning(
-                        f"ParseService: Не вдалося отримати/створити model_id для '{offer_dto.model}' (make_id: {make_id}). Пропуск: {offer_dto.identifier}")
-                    continue
+
+                fuel_type_id = FuelTypeRepository.get_id_by_key_name(
+                    offer_dto.fuel_type) if offer_dto.fuel_type else None
 
                 data_for_service = {
                     "offer_identifier": offer_dto.identifier,
                     "source_id": source_id,
-                    "link_to_offer": str(offer_dto.link_to_offer),
+                    "link_to_offer": offer_dto.link_to_offer,
                     "price": offer_dto.price,
                     "currency": offer_dto.currency,
                     "country_of_listing": offer_dto.country_code,
@@ -67,21 +74,23 @@ class ParseService:
                     "mileage_km": offer_dto.mileage,
                     "raw_fuel_type": offer_dto.fuel_type
                 }
-
-                created_offer_id = OfferService.add_offer_from_parser(data_for_service)
-                if created_offer_id:
-                    logger.info(
-                        f"ParseService: Успішно оброблено та передано на збереження пропозицію {offer_dto.identifier}, new offer_id: {created_offer_id}.")
-                    saved_cars_count += 1
-                    newly_saved_offer_ids.append(created_offer_id)
-                else:
-                    logger.info(
-                        f"ParseService: Пропозиція {offer_dto.identifier} вже існує або не була збережена сервісом (повернуто None).")
-
-            except OfferServiceError as e:
-                logger.error(f"ParseService: Помилка від OfferService при обробці {offer_dto.identifier}: {e}")
+                offers_to_create.append(data_for_service)
             except Exception as e:
-                logger.error(f"ParseService: Непередбачена помилка при обробці пропозиції {offer_dto.identifier}: {e}",
+                logger.error(f"ParseService: Помилка підготовки даних для пропозиції {offer_dto.identifier}: {e}",
                              exc_info=True)
 
-        return saved_cars_count, newly_saved_offer_ids
+        if not offers_to_create:
+            logger.warning("Не залишилось пропозицій для створення після підготовки даних.")
+            return 0, []
+
+        try:
+            newly_saved_offer_ids = OfferService.bulk_add_offers_from_parser(offers_to_create)
+            saved_cars_count = len(newly_saved_offer_ids)
+            logger.info(f"ParseService: Успішно передано на масове збереження {saved_cars_count} пропозицій.")
+            return saved_cars_count, newly_saved_offer_ids
+        except OfferServiceError as e:
+            logger.error(f"ParseService: Помилка від OfferService при масовій обробці: {e}")
+            return 0, []
+        except Exception as e:
+            logger.error(f"ParseService: Непередбачена помилка при масовій обробці пропозицій: {e}", exc_info=True)
+            return 0, []

@@ -22,7 +22,7 @@ class AutoScout24Parser:
                  fregfrom: Optional[int] = None, fregto: Optional[int] = None,
                  kmfrom: Optional[int] = None, kmto: Optional[int] = None,
                  cy: Optional[str] = None, fuel: Optional[str] = None,
-                 page_count: int = 5):
+                 page_count: int = 6):
         self.base_url = base_url
 
         self.make = make
@@ -167,7 +167,7 @@ class AutoScout24Parser:
 
                 if tasks:
                     results = await asyncio.gather(*tasks)
-                    all_parsed_cars.extend([res for res in results if res])
+                all_parsed_cars.extend([res for res in results if res])
         return all_parsed_cars
 
     def parse(self) -> list[ParsedCarOffer]:

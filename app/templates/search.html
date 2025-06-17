@@ -174,7 +174,8 @@
             <select id="filter_fuel_type" name="fuel_type" class="form-select">
                 <option value="">Усі типи</option>
                 {% for ft_item in fuel_types %}
-                <option value="{{ ft_item.key_name }}" {% if selected.fuel_type == ft_item.key_name %}selected{% endif %}>
+                <option value="{{ ft_item.key_name }}" {% if selected.fuel_type== ft_item.key_name %}selected{% endif
+                        %}>
                     {{ ft_item.label }}
                 </option>
                 {% endfor %}
@@ -185,7 +186,7 @@
             <select id="filter_year" name="year" class="form-select">
                 <option value="">Усі роки</option>
                 {% for y in years %}
-                <option value="{{ y }}" {% if selected.year == y|string %}selected{% endif %}>{{ y }}</option>
+                <option value="{{ y }}" {% if selected.year== y|string %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -194,7 +195,7 @@
             <select id="filter_transmission" name="transmission" class="form-select">
                 <option value="">Усі типи</option>
                 {% for key, label in transmissions.items() %}
-                <option value="{{ key }}" {% if selected.transmission == key %}selected{% endif %}>
+                <option value="{{ key }}" {% if selected.transmission== key %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
@@ -206,7 +207,8 @@
                 <select class="form-select me-2" name="price_min">
                     <option value="">Від</option>
                     {% for p in price_options %}
-                    <option value="{{ p }}" {% if selected.price_min and p|string==selected.price_min %}selected{% endif %}>
+                    <option value="{{ p }}" {% if selected.price_min and p|string==selected.price_min %}selected{% endif
+                            %}>
                         {{ "{:,}".format(p) }}
                     </option>
                     {% endfor %}
@@ -214,7 +216,8 @@
                 <select class="form-select" name="price_max">
                     <option value="">До</option>
                     {% for p in price_options %}
-                    <option value="{{ p }}" {% if selected.price_max and p|string==selected.price_max %}selected{% endif %}>
+                    <option value="{{ p }}" {% if selected.price_max and p|string==selected.price_max %}selected{% endif
+                            %}>
                         {{ "{:,}".format(p) }}
                     </option>
                     {% endfor %}
@@ -227,7 +230,8 @@
                 <select class="form-select me-2" name="mileage_min">
                     <option value="">Від</option>
                     {% for m in mileage_options %}
-                    <option value="{{ m }}" {% if selected.mileage_min and m|string==selected.mileage_min %}selected{% endif %}>
+                    <option value="{{ m }}" {% if selected.mileage_min and m|string==selected.mileage_min %}selected{%
+                            endif %}>
                         {{ "{:,}".format(m) }}
                     </option>
                     {% endfor %}
@@ -235,7 +239,8 @@
                 <select class="form-select" name="mileage_max">
                     <option value="">До</option>
                     {% for m in mileage_options %}
-                    <option value="{{ m }}" {% if selected.mileage_max and m|string==selected.mileage_max %}selected{% endif %}>
+                    <option value="{{ m }}" {% if selected.mileage_max and m|string==selected.mileage_max %}selected{%
+                            endif %}>
                         {{ "{:,}".format(m) }}
                     </option>
                     {% endfor %}
@@ -247,7 +252,7 @@
             <select id="filter_body_type" name="body_type" class="form-select">
                 <option value="">Усі типи</option>
                 {% for key, label in body_types.items() %}
-                <option value="{{ key }}" {% if selected.body_type == key %}selected{% endif %}>
+                <option value="{{ key }}" {% if selected.body_type== key %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
@@ -258,7 +263,7 @@
             <select id="filter_drive" name="drive" class="form-select">
                 <option value="">Усі типи</option>
                 {% for key, label in drive_types.items() %}
-                <option value="{{ key }}" {% if selected.drive == key %}selected{% endif %}>
+                <option value="{{ key }}" {% if selected.drive== key %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
@@ -268,8 +273,8 @@
             <label for="filter_sort" class="form-label">Сортування</label>
             <select id="filter_sort" name="sort" class="form-select">
                 <option value="">За замовчуванням</option>
-                <option value="price_asc" {% if selected.sort == 'price_asc' %}selected{% endif %}>Ціна ↓</option>
-                <option value="price_desc" {% if selected.sort == 'price_desc' %}selected{% endif %}>Ціна ↑</option>
+                <option value="price_asc" {% if selected.sort=='price_asc' %}selected{% endif %}>Вартість ↓</option>
+                <option value="price_desc" {% if selected.sort=='price_desc' %}selected{% endif %}>Вартість ↑</option>
             </select>
         </div>
 
@@ -282,15 +287,26 @@
 </div>
 
 <div class="mb-3 d-flex gap-2">
-    <button type="button" id="compareBtnSearchPage" class="btn btn-primary" disabled>
-        Порівняти обрані
-    </button>
-    <button type="button" id="resetBtnSearchPage" class="btn btn-outline-secondary">
-        Скинути вибір
-    </button>
+
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <div>
+        <button type="button" id="compareBtnSearchPage" class="btn btn-primary" disabled>
+            Порівняти обрані
+        </button>
+        <button type="button" id="resetBtnSearchPage" class="btn btn-outline-secondary">
+            Скинути вибір
+        </button>
+    </div>
+    <div>
+        {% if cars %}
+        <span class="text-muted">Всього знайдено: <strong>{{ cars|length }}</strong></span>
+        {% endif %}
+    </div>
 </div>
 <div class="table-responsive table-responsive-lg">
-    <table class="table table-md mb-4" id="searchResultsTable">
+    <table class="table table-md mb-4 table-hover" id="searchResultsTable">
         <thead class="table-light">
         <tr>
             <th></th>
