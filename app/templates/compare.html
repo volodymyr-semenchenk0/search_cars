@@ -132,7 +132,7 @@
                 {% endfor %}
             </tr>
             <tr class="table-group-divider">
-                <td class="fw-bold text-start bg-light">Ціна, €</td>
+                <td class="fw-bold text-start bg-light">Вартість, €</td>
                 {% for car in cars %}
                 <td class="text-start bg-light">
                     {% if car.price is not none %}
@@ -245,7 +245,7 @@
                 {% endfor %}
             </tr>
             <tr>
-                <td class="fw-bold text-start bg-light">Фінальна ціна (з усім)</td>
+                <td class="fw-bold text-start bg-light">Фінальна вартість (з усім)</td>
                 {% for car in cars %}
                 <td class="text-start bg-light">
                     {% if car.final_price_uah is not none and car.eur_to_uah_rate_actual %}

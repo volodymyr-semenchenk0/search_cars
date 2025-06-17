@@ -17,9 +17,11 @@ main_bp = Blueprint('main', __name__)
 makes = CarMakeService.get_all_makes_for_select()
 fuel_types = FuelTypeService.list_all_fuel_types_for_select()
 
+
 @main_bp.route('/')
 def root_redirect():
     return redirect(url_for('main.search'))
+
 
 @main_bp.route("/search", methods=['GET', 'POST'])
 def search():
@@ -51,17 +53,39 @@ def search():
 
         return redirect(url_for('main.search', **raw_form_data_post))
 
-    else:
-        selected_values_for_template = current_form_values
+    newly_found_offers = []
+    selected_values_for_template = current_form_values
+    search_active = False
 
-        if session.get('results_freshly_from_post'):
-            ids_from_session = session.get('newly_found_ids', [])
-            if ids_from_session:
-                newly_found_offers = OfferService.get_offers_list_by_ids(ids_from_session)
+    active_session_keys = [
+        "make", "model", "fuel_type", "year", "country", "sort",
+        "price_min", "price_max", "mileage_min", "mileage_max",
+        "body_type", "transmission", "drive", "source_id", "pricefrom",
+        "priceto", "fregfrom", "fregto", "kmfrom", "kmto", "cy", "fuel"
+    ]
+    is_active_session_url = any(key in request.args for key in active_session_keys)
 
-            session.pop('results_freshly_from_post', None)
-        else:
-            session.pop('newly_found_ids', None)
+    if not is_active_session_url:
+        session.pop('newly_found_ids', None)
+
+    ids_from_session = session.get('newly_found_ids')
+
+    if 'results_freshly_from_post' in session:
+        session.pop('results_freshly_from_post')
+
+    if ids_from_session:
+        search_active = True
+        valid_filter_keys = [
+            "make", "model", "fuel_type", "year", "country", "sort",
+            "price_min", "price_max", "mileage_min", "mileage_max",
+            "body_type", "transmission", "drive", "source_id"
+        ]
+        filter_params = {k: v for k, v in current_form_values.items() if k in valid_filter_keys and v}
+
+        newly_found_offers = OfferService.get_filtered_cars_list(
+            base_offer_ids=ids_from_session,
+            **filter_params
+        )
 
     return render_template(
         "search.html",
@@ -70,9 +94,13 @@ def search():
         fuel_types=fuel_types,
         price_options=PRICE_OPTIONS,
         mileage_options=MILEAGE_OPTIONS,
+        body_types=BODY_TYPES,
+        transmissions=TRANSMISSIONS,
+        drive_types=DRIVE_TYPES,
         sources=sources,
         selected=selected_values_for_template,
         newly_found_offers=newly_found_offers,
+        search_active=search_active
     )
 
 
@@ -115,6 +143,7 @@ def get_history_data():
         selected=selected,
         selected_ids=selected_ids,
     )
+
 
 @main_bp.route('/duty_calc', methods=['GET', 'POST'])
 def duty_calc():

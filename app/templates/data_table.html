@@ -5,7 +5,7 @@
     <h2 class="mb-4">Історія пошуку</h2>
 </div>
 <div class="border p-4 rounded bg-white mt-3">
-    <form id="searchForm" method="GET" action="{{ url_for('main.get_history_data') }}" class="row g-3">
+    <form id="historyTableFiltersForm" method="GET" action="{{ url_for('main.get_history_data') }}" class="row g-3">
         <div class="col-md-3">
             <label for="make" class="form-label">Марка</label>
             <select class="form-select" id="make" name="make">
@@ -63,6 +63,78 @@
         </div>
 
         <div class="col-md-3">
+            <label class="form-label">Ціна (€)</label>
+            <div class="d-flex">
+                <select class="form-select me-2" name="price_min">
+                    <option value="">Від</option>
+                    {% for p in price_options %}
+                    <option value="{{ p }}" {% if selected.price_min and p|string==selected.price_min %}selected{% endif
+                            %}>
+                        {{ "{:,}".format(p) }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select class="form-select" name="price_max">
+                    <option value="">До</option>
+                    {% for p in price_options %}
+                    <option value="{{ p }}" {% if selected.price_max and p|string==selected.price_max %}selected{% endif
+                            %}>
+                        {{ "{:,}".format(p) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Пробіг (км)</label>
+            <div class="d-flex">
+                <select class="form-select me-2" name="mileage_min">
+                    <option value="">Від</option>
+                    {% for m in mileage_options %}
+                    <option value="{{ m }}" {% if selected.mileage_min and m|string==selected.mileage_min %}selected{%
+                            endif %}>
+                        {{ "{:,}".format(m) }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select class="form-select" name="mileage_max">
+                    <option value="">До</option>
+                    {% for m in mileage_options %}
+                    <option value="{{ m }}" {% if selected.mileage_max and m|string==selected.mileage_max %}selected{%
+                            endif %}>
+                        {{ "{:,}".format(m) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <label for="transmission" class="form-label">Коробка передач</label>
+            <select id="transmission" name="transmission" class="form-select">
+                <option value="">Усі типи</option>
+                {% for key, label in transmissions.items() %}
+                <option value="{{ key }}" {% if selected.transmission== key %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label for="body_type" class="form-label">Тип кузова</label>
+            <select id="body_type" name="body_type" class="form-select">
+                <option value="">Усі типи</option>
+                {% for key, label in body_types.items() %}
+                <option value="{{ key }}" {% if selected.body_type== key %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
             <label for="sort" class="form-label">Сортування</label>
             <select id="sort" name="sort" class="form-select">
                 <option value="newest" {% if selected.sort=='newest' %}selected{% endif %}>
@@ -80,14 +152,26 @@
             </select>
         </div>
 
-        <div class="col-md-3 align-self-end">
-            <button type="submit" class="btn btn-primary w-100">Застосувати</button>
+        <div class="col-md-3">
+            <label for="drive" class="form-label">Привід</label>
+            <select id="drive" name="drive" class="form-select">
+                <option value="">Усі типи</option>
+                {% for key, label in drive_types.items() %}
+                <option value="{{ key }}" {% if selected.drive == key %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
 
+
         <div class="col-md-3 align-self-end">
-            <a href="{{ url_for('main.get_history_data') }}" class="btn btn-outline-secondary w-100">
-                Скинути всі
-            </a>
+            <div class="d-flex">
+                <button type="submit" class="btn btn-primary flex-grow-1 me-2">Фільтрувати</button>
+                <a href="{{ url_for('main.get_history_data') }}" class="btn btn-outline-secondary flex-grow-1">
+                    Скинути всі
+                </a>
+            </div>
         </div>
     </form>
 </div>
@@ -107,7 +191,7 @@
             <th>Обʼєм\Ємн.</th>
             <th>Пробіг, км</th>
             <th>Країна</th>
-            <th class="text-end">Ціна, €</th>
+            <th class="text-end">Вартість, €</th>
             <th class="text-end">Фінальна ціна, €</th>
             <th class="text-end">Дії</th>
         </tr>

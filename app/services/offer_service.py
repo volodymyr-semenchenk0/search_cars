@@ -82,20 +82,21 @@ class OfferService:
 
     @staticmethod
     def get_filtered_cars_list(
-        make: Optional[str] = None,
-        model: Optional[str] = None,
-        fuel_type: Optional[str] = None,
-        year: Optional[int] = None,
-        country: Optional[str] = None,
-        sort: Optional[str] = None,
-        price_min: Optional[float] = None,
-        price_max: Optional[float] = None,
-        mileage_min: Optional[int] = None,
-        mileage_max: Optional[int] = None,
-        body_type: Optional[str] = None,
-        transmission: Optional[str] = None,
-        drive: Optional[str] = None,
-        source_id: Optional[int] = None
+            make: Optional[str] = None,
+            model: Optional[str] = None,
+            fuel_type: Optional[str] = None,
+            year: Optional[int] = None,
+            country: Optional[str] = None,
+            sort: Optional[str] = None,
+            price_min: Optional[float] = None,
+            price_max: Optional[float] = None,
+            mileage_min: Optional[int] = None,
+            mileage_max: Optional[int] = None,
+            body_type: Optional[str] = None,
+            transmission: Optional[str] = None,
+            drive: Optional[str] = None,
+            source_id: Optional[int] = None,
+            base_offer_ids=None
     ) -> List[Dict[str, Any]]:
         try:
             make_id_int = int(make) if make and make.isdigit() else None
@@ -131,7 +132,8 @@ class OfferService:
                 body_type=body_type,
                 transmission=transmission,
                 drive=drive,
-                source_id=source_id_int
+                source_id=source_id_int,
+                base_offer_ids=base_offer_ids
             )
         except Exception as e:
             logger.error(
@@ -218,8 +220,8 @@ class OfferService:
 
                     if should_update_powertrain_details:
                         CarRepository.update_powertrain_details(powertrain_id, powertrain_details_update_data, cursor)
-                        logger.info(f"OfferService: Оновлено деталі силової установки для powertrain_id {powertrain_id}.")
-
+                        logger.info(
+                            f"OfferService: Оновлено деталі силової установки для powertrain_id {powertrain_id}.")
 
             price_for_calc = data.get("price_eur")
             year_for_calc = data.get("production_year")
@@ -247,10 +249,13 @@ class OfferService:
                     battery_capacity_kwh=battery_for_calc
                 )
                 if recalculated_customs_results:
-                    if CustomsCalculationRepository.save_or_update(offer_id, recalculated_customs_results, db_cursor=cursor):
-                        logger.info(f"OfferService: Митні розрахунки для offer_id {offer_id} успішно перераховано та збережено в рамках транзакції.")
+                    if CustomsCalculationRepository.save_or_update(offer_id, recalculated_customs_results,
+                                                                   db_cursor=cursor):
+                        logger.info(
+                            f"OfferService: Митні розрахунки для offer_id {offer_id} успішно перераховано та збережено в рамках транзакції.")
                 else:
-                    logger.warning(f"OfferService: Перерахунок мита для offer_id {offer_id} не дав результатів. Існуючі розрахунки мита не змінено.")
+                    logger.warning(
+                        f"OfferService: Перерахунок мита для offer_id {offer_id} не дав результатів. Існуючі розрахунки мита не змінено.")
 
             conn.commit()
             logger.info(f"OfferService: Транзакцію для оновлення offer_id {offer_id} успішно зафіксовано.")
@@ -259,7 +264,8 @@ class OfferService:
         except Exception as e:
             if conn and conn.is_connected():
                 conn.rollback()
-                logger.error(f"OfferService: Транзакцію для offer_id {offer_id} відкочено через помилку: {e}", exc_info=True)
+                logger.error(f"OfferService: Транзакцію для offer_id {offer_id} відкочено через помилку: {e}",
+                             exc_info=True)
             raise ServiceError(f"Помилка сервісу при оновленні даних ({type(e).__name__}): {e}")
         finally:
             if cursor:

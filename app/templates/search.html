@@ -46,7 +46,7 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label">Ціна (€)</label>
+            <label class="form-label">Вартість, €</label>
             <div class="d-flex">
                 <label for="pricefrom"></label>
                 <select class="form-select me-2" id="pricefrom" name="pricefrom">
@@ -163,8 +163,124 @@
         </div>
     </form>
 </div>
-{% if newly_found_offers %}
+{% if search_active %}
 <h3 class="mt-4 mb-3 text-center">Результати пошуку</h3>
+
+<div class="border p-4 rounded bg-white mt-3 mb-4">
+    <h5 class="mb-3">Фільтри результатів</h5>
+    <form id="searchResultsFilterForm" method="GET" action="{{ url_for('main.search') }}" class="row g-3">
+        <div class="col-md-3">
+            <label for="filter_fuel_type" class="form-label">Тип пального</label>
+            <select id="filter_fuel_type" name="fuel_type" class="form-select">
+                <option value="">Усі типи</option>
+                {% for ft_item in fuel_types %}
+                <option value="{{ ft_item.key_name }}" {% if selected.fuel_type == ft_item.key_name %}selected{% endif %}>
+                    {{ ft_item.label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="filter_year" class="form-label">Рік виробництва</label>
+            <select id="filter_year" name="year" class="form-select">
+                <option value="">Усі роки</option>
+                {% for y in years %}
+                <option value="{{ y }}" {% if selected.year == y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="filter_transmission" class="form-label">Коробка передач</label>
+            <select id="filter_transmission" name="transmission" class="form-select">
+                <option value="">Усі типи</option>
+                {% for key, label in transmissions.items() %}
+                <option value="{{ key }}" {% if selected.transmission == key %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Ціна (€)</label>
+            <div class="d-flex">
+                <select class="form-select me-2" name="price_min">
+                    <option value="">Від</option>
+                    {% for p in price_options %}
+                    <option value="{{ p }}" {% if selected.price_min and p|string==selected.price_min %}selected{% endif %}>
+                        {{ "{:,}".format(p) }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select class="form-select" name="price_max">
+                    <option value="">До</option>
+                    {% for p in price_options %}
+                    <option value="{{ p }}" {% if selected.price_max and p|string==selected.price_max %}selected{% endif %}>
+                        {{ "{:,}".format(p) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Пробіг (км)</label>
+            <div class="d-flex">
+                <select class="form-select me-2" name="mileage_min">
+                    <option value="">Від</option>
+                    {% for m in mileage_options %}
+                    <option value="{{ m }}" {% if selected.mileage_min and m|string==selected.mileage_min %}selected{% endif %}>
+                        {{ "{:,}".format(m) }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <select class="form-select" name="mileage_max">
+                    <option value="">До</option>
+                    {% for m in mileage_options %}
+                    <option value="{{ m }}" {% if selected.mileage_max and m|string==selected.mileage_max %}selected{% endif %}>
+                        {{ "{:,}".format(m) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label for="filter_body_type" class="form-label">Тип кузова</label>
+            <select id="filter_body_type" name="body_type" class="form-select">
+                <option value="">Усі типи</option>
+                {% for key, label in body_types.items() %}
+                <option value="{{ key }}" {% if selected.body_type == key %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="filter_drive" class="form-label">Привід</label>
+            <select id="filter_drive" name="drive" class="form-select">
+                <option value="">Усі типи</option>
+                {% for key, label in drive_types.items() %}
+                <option value="{{ key }}" {% if selected.drive == key %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="filter_sort" class="form-label">Сортування</label>
+            <select id="filter_sort" name="sort" class="form-select">
+                <option value="">За замовчуванням</option>
+                <option value="price_asc" {% if selected.sort == 'price_asc' %}selected{% endif %}>Ціна ↓</option>
+                <option value="price_desc" {% if selected.sort == 'price_desc' %}selected{% endif %}>Ціна ↑</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 align-self-end">
+            <div class="d-flex">
+                <button type="submit" class="btn btn-primary flex-grow-1 me-2">Фільтрувати</button>
+            </div>
+        </div>
+    </form>
+</div>
+
 <div class="mb-3 d-flex gap-2">
     <button type="button" id="compareBtnSearchPage" class="btn btn-primary" disabled>
         Порівняти обрані
@@ -254,6 +370,10 @@
                     <i class="bi bi-box-arrow-up-right"></i>
                 </a>
             </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="12" class="text-center p-4">За вашими фільтрами автомобілів не знайдено.</td>
         </tr>
         {% endfor %}
         </tbody>

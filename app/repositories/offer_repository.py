@@ -72,37 +72,37 @@ class OfferRepository:
     @staticmethod
     def get_details_by_id(offer_id: int) -> Optional[Dict[str, Any]]:
         sql = """
-              SELECT o.id             as offer_id,
+              SELECT o.id               as offer_id,
                      o.link_to_offer,
                      o.price,
                      o.currency,
                      o.country_of_listing,
                      o.offer_identifier,
                      o.source_id,
-                     o.offer_created_at     as offer_created_at,
-                     s.name           as source_name,
-                     s.url            as source_url,
-                     c.id             as car_id,
+                     o.offer_created_at as offer_created_at,
+                     s.name             as source_name,
+                     s.url              as source_url,
+                     c.id               as car_id,
                      c.production_year,
                      c.body_type,
                      c.transmission,
                      c.drive,
                      c.model_id,
-                     cm.name          as model_name,
-                     cma.name         as make_name,
-                     pt.id            as powertrain_id,
+                     cm.name            as model_name,
+                     cma.name           as make_name,
+                     pt.id              as powertrain_id,
                      pt.mileage,
                      pt.fuel_type_id,
                      ice.engine_volume_cc,
                      epd.battery_capacity_kwh,
-                     ft.key_name      as fuel_type,
-                     ft.label         as fuel_type_label,
+                     ft.key_name        as fuel_type,
+                     ft.label           as fuel_type_label,
                      cust.duty_uah,
                      cust.excise_uah,
                      cust.vat_uah,
                      cust.pension_fee_uah,
                      cust.customs_payments_total_uah,
-                     cust.final_total as final_price_uah,
+                     cust.final_total   as final_price_uah,
                      cust.eur_to_uah_rate_actual
               FROM offers o
                        JOIN cars c ON o.car_id = c.id
@@ -143,7 +143,8 @@ class OfferRepository:
             car_id_to_delete = result.get('car_id')
 
             if not car_id_to_delete:
-                logger.error(f"Для пропозиції ID {offer_id} не знайдено пов'язаного car_id, хоча пропозиція існує. Видалення неможливе без car_id.")
+                logger.error(
+                    f"Для пропозиції ID {offer_id} не знайдено пов'язаного car_id, хоча пропозиція існує. Видалення неможливе без car_id.")
                 conn.rollback()
                 return False
 
@@ -161,7 +162,8 @@ class OfferRepository:
                         f"Немає інших пропозицій для car_id {car_id_to_delete}. Видалення авто та пов'язаних даних.")
                     car_deleted = CarRepository.delete_car_and_dependencies(car_id_to_delete, cursor)
                     if not car_deleted:
-                        logger.error(f"Не вдалося видалити автомобіль car_id {car_id_to_delete}, хоча він мав бути видалений.")
+                        logger.error(
+                            f"Не вдалося видалити автомобіль car_id {car_id_to_delete}, хоча він мав бути видалений.")
                 else:
                     logger.info(
                         f"Існують інші пропозиції ({other_offers_count}) для car_id {car_id_to_delete}. Авто не видаляється.")
@@ -182,20 +184,21 @@ class OfferRepository:
 
     @staticmethod
     def get_filtered(
-        make_id: Optional[int] = None,
-        model_id: Optional[int] = None,
-        fuel_type_key: Optional[str] = None,
-        year: Optional[int] = None,
-        country_of_listing: Optional[str] = None,
-        sort_by: Optional[str] = None,
-        price_min: Optional[float] = None,
-        price_max: Optional[float] = None,
-        mileage_min: Optional[int] = None,
-        mileage_max: Optional[int] = None,
-        body_type: Optional[str] = None,
-        transmission: Optional[str] = None,
-        drive: Optional[str] = None,
-        source_id: Optional[int] = None
+            make_id: Optional[int] = None,
+            model_id: Optional[int] = None,
+            fuel_type_key: Optional[str] = None,
+            year: Optional[int] = None,
+            country_of_listing: Optional[str] = None,
+            sort_by: Optional[str] = None,
+            price_min: Optional[float] = None,
+            price_max: Optional[float] = None,
+            mileage_min: Optional[int] = None,
+            mileage_max: Optional[int] = None,
+            body_type: Optional[str] = None,
+            transmission: Optional[str] = None,
+            drive: Optional[str] = None,
+            source_id: Optional[int] = None,
+            base_offer_ids: Optional[List[int]] = None
     ) -> List[Dict[str, Any]]:
         base_sql = (
             "SELECT o.id as offer_id, "
@@ -223,6 +226,13 @@ class OfferRepository:
         )
         where_clauses = []
         params = []
+
+        if base_offer_ids:
+            if not base_offer_ids:
+                return []
+            placeholders = ', '.join(['%s'] * len(base_offer_ids))
+            where_clauses.append(f"o.id IN ({placeholders})")
+            params.extend(base_offer_ids)
 
         if make_id is not None:
             where_clauses.append("cma.id = %s")
