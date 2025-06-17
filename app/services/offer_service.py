@@ -82,17 +82,40 @@ class OfferService:
 
     @staticmethod
     def get_filtered_cars_list(
-            make: Optional[str] = None,
-            model: Optional[str] = None,
-            fuel_type: Optional[str] = None,
-            year: Optional[int] = None,
-            country: Optional[str] = None,
-            sort: Optional[str] = None
+        make: Optional[str] = None,
+        model: Optional[str] = None,
+        fuel_type: Optional[str] = None,
+        year: Optional[int] = None,
+        country: Optional[str] = None,
+        sort: Optional[str] = None,
+        price_min: Optional[float] = None,
+        price_max: Optional[float] = None,
+        mileage_min: Optional[int] = None,
+        mileage_max: Optional[int] = None,
+        body_type: Optional[str] = None,
+        transmission: Optional[str] = None,
+        drive: Optional[str] = None,
+        source_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         try:
             make_id_int = int(make) if make and make.isdigit() else None
             model_id_int = int(model) if model and model.isdigit() else None
             year_int = int(year) if year and year.isdigit() else None
+            source_id_int = (
+                int(source_id) if source_id and str(source_id).isdigit() else None
+            )
+            price_min_float = (
+                float(price_min) if price_min and str(price_min).replace('.', '').isdigit() else None
+            )
+            price_max_float = (
+                float(price_max) if price_max and str(price_max).replace('.', '').isdigit() else None
+            )
+            mileage_min_int = (
+                int(mileage_min) if mileage_min and str(mileage_min).isdigit() else None
+            )
+            mileage_max_int = (
+                int(mileage_max) if mileage_max and str(mileage_max).isdigit() else None
+            )
 
             return OfferRepository.get_filtered(
                 make_id=make_id_int,
@@ -100,11 +123,23 @@ class OfferService:
                 fuel_type_key=fuel_type,
                 year=year_int,
                 country_of_listing=country,
-                sort_by=sort
+                sort_by=sort,
+                price_min=price_min_float,
+                price_max=price_max_float,
+                mileage_min=mileage_min_int,
+                mileage_max=mileage_max_int,
+                body_type=body_type,
+                transmission=transmission,
+                drive=drive,
+                source_id=source_id_int
             )
         except Exception as e:
-            logger.error(f"CarService: Помилка при отриманні списку пропозицій: {e}", exc_info=True)
-            raise ServiceError(f"Помилка сервісу при отриманні списку пропозицій: {e}")
+            logger.error(
+                f"CarService: Помилка при отриманні списку пропозицій: {e}", exc_info=True
+            )
+            raise ServiceError(
+                f"Помилка сервісу при отриманні списку пропозицій: {e}"
+            )
 
     @staticmethod
     def get_offer_details(offer_id: int) -> Dict[str, Any]:

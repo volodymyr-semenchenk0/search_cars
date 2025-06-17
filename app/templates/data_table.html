@@ -126,7 +126,7 @@
             <td>
                 {% if car.fuel_type == 'electric' %}
                 {% if car.battery_capacity_kwh is not none and car.battery_capacity_kwh > 0 %}
-                {{ car.battery_capacity_kwh }} кВт·год
+                {{ car.battery_capacity_kwh }} кВт-год
                 {% else %}
                 —
                 {% endif %}

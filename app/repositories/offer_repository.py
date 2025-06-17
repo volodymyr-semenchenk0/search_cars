@@ -182,58 +182,45 @@ class OfferRepository:
 
     @staticmethod
     def get_filtered(
-            make_id: Optional[int] = None,
-            model_id: Optional[int] = None,
-            fuel_type_key: Optional[str] = None,
-            year: Optional[int] = None,
-            country_of_listing: Optional[str] = None,
-            sort_by: Optional[str] = None
+        make_id: Optional[int] = None,
+        model_id: Optional[int] = None,
+        fuel_type_key: Optional[str] = None,
+        year: Optional[int] = None,
+        country_of_listing: Optional[str] = None,
+        sort_by: Optional[str] = None,
+        price_min: Optional[float] = None,
+        price_max: Optional[float] = None,
+        mileage_min: Optional[int] = None,
+        mileage_max: Optional[int] = None,
+        body_type: Optional[str] = None,
+        transmission: Optional[str] = None,
+        drive: Optional[str] = None,
+        source_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
-        base_sql = """
-                   SELECT o.id             as offer_id,
-                          o.link_to_offer,
-                          o.price,
-                          o.currency,
-                          o.country_of_listing,
-                          o.offer_identifier,
-                          o.source_id,
-                          o.offer_created_at,
-                          s.name           as source_name,
-                          s.url            as source_url,
-                          c.id             as car_id,
-                          c.production_year,
-                          c.body_type,
-                          c.transmission,
-                          c.drive,
-                          cm.id            as car_model_id,
-                          cm.name          as model_name,
-                          cma.id           as car_make_id,
-                          cma.name         as make_name,
-                          pt.id            as powertrain_id,
-                          pt.mileage,
-                          pt.fuel_type_id,
-                          ice.engine_volume_cc,
-                          epd.battery_capacity_kwh,
-                          ft.key_name      as fuel_type,
-                          ft.label         as fuel_type_label,
-                          cust.duty_uah,
-                          cust.excise_uah,
-                          cust.vat_uah,
-                          cust.pension_fee_uah,
-                          cust.customs_payments_total_uah,
-                          cust.final_total as final_price_uah,
-                          cust.eur_to_uah_rate_actual
-                   FROM offers o
-                            JOIN cars c ON o.car_id = c.id
-                            JOIN sources s ON o.source_id = s.id
-                            LEFT JOIN car_models cm ON c.model_id = cm.id
-                            LEFT JOIN car_makes cma ON cm.make_id = cma.id
-                            LEFT JOIN powertrains pt ON pt.car_id = c.id
-                            LEFT JOIN fuel_types ft ON pt.fuel_type_id = ft.id
-                            LEFT JOIN ice_powertrain_details ice ON pt.id = ice.powertrain_id
-                            LEFT JOIN electric_powertrain_details epd ON pt.id = epd.powertrain_id
-                            LEFT JOIN customs_calculations cust ON cust.offer_id = o.id
-                   """
+        base_sql = (
+            "SELECT o.id as offer_id, "
+            "o.link_to_offer, o.price, o.currency, o.country_of_listing, "
+            "o.offer_identifier, o.source_id, o.offer_created_at, "
+            "s.name as source_name, s.url as source_url, c.id as car_id, "
+            "c.production_year, c.body_type, c.transmission, c.drive, "
+            "cm.id as car_model_id, cm.name as model_name, "
+            "cma.id as car_make_id, cma.name as make_name, pt.id as powertrain_id, "
+            "pt.mileage, pt.fuel_type_id, ice.engine_volume_cc, "
+            "epd.battery_capacity_kwh, ft.key_name as fuel_type, "
+            "ft.label as fuel_type_label, cust.duty_uah, cust.excise_uah, "
+            "cust.vat_uah, cust.pension_fee_uah, cust.customs_payments_total_uah, "
+            "cust.final_total as final_price_uah, cust.eur_to_uah_rate_actual "
+            "FROM offers o "
+            "JOIN cars c ON o.car_id = c.id "
+            "JOIN sources s ON o.source_id = s.id "
+            "LEFT JOIN car_models cm ON c.model_id = cm.id "
+            "LEFT JOIN car_makes cma ON cm.make_id = cma.id "
+            "LEFT JOIN powertrains pt ON pt.car_id = c.id "
+            "LEFT JOIN fuel_types ft ON pt.fuel_type_id = ft.id "
+            "LEFT JOIN ice_powertrain_details ice ON pt.id = ice.powertrain_id "
+            "LEFT JOIN electric_powertrain_details epd ON pt.id = epd.powertrain_id "
+            "LEFT JOIN customs_calculations cust ON cust.offer_id = o.id "
+        )
         where_clauses = []
         params = []
 
@@ -252,6 +239,30 @@ class OfferRepository:
         if country_of_listing:
             where_clauses.append("o.country_of_listing = %s")
             params.append(country_of_listing)
+        if price_min is not None:
+            where_clauses.append("o.price >= %s")
+            params.append(price_min)
+        if price_max is not None:
+            where_clauses.append("o.price <= %s")
+            params.append(price_max)
+        if mileage_min is not None:
+            where_clauses.append("pt.mileage >= %s")
+            params.append(mileage_min)
+        if mileage_max is not None:
+            where_clauses.append("pt.mileage <= %s")
+            params.append(mileage_max)
+        if body_type:
+            where_clauses.append("c.body_type = %s")
+            params.append(body_type)
+        if transmission:
+            where_clauses.append("c.transmission = %s")
+            params.append(transmission)
+        if drive:
+            where_clauses.append("c.drive = %s")
+            params.append(drive)
+        if source_id is not None:
+            where_clauses.append("o.source_id = %s")
+            params.append(source_id)
 
         if where_clauses:
             base_sql += " WHERE " + " AND ".join(where_clauses)
@@ -268,7 +279,9 @@ class OfferRepository:
         try:
             return execute_query(base_sql, tuple(params))
         except Exception as e:
-            logger.error(f"Помилка отримання відфільтрованих пропозицій: {e}", exc_info=True)
+            logger.error(
+                f"Помилка отримання відфільтрованих пропозицій: {e}", exc_info=True
+            )
             return []
 
     @staticmethod

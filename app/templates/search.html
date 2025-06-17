@@ -204,9 +204,17 @@
             <td>{{ car.fuel_type | fuel_label if car.fuel_type else '—' }}</td>
             <td>
                 {% if car.fuel_type == 'electric' %}
-                {{ car.battery_capacity_kwh }} кВт·год
+                {% if car.battery_capacity_kwh %}
+                {{ car.battery_capacity_kwh }} кВт-год
                 {% else %}
+                —
+                {% endif %}
+                {% else %}
+                {% if car.engine_volume_cc %}
                 {{ car.engine_volume_cc }} см³
+                {% else %}
+                —
+                {% endif %}
                 {% endif %}
             </td>
             <td>{{ car.transmission | transmission_label if car.transmission else '—' }}</td>

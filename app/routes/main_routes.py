@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint, session
 
-from app.data.options import PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list
+from app.data.options import PRICE_OPTIONS, MILEAGE_OPTIONS, get_years_list, BODY_TYPES, TRANSMISSIONS, DRIVE_TYPES
 from app.services import (
     CalculateCustomsService,
     CarMakeService,
@@ -17,37 +17,11 @@ main_bp = Blueprint('main', __name__)
 makes = CarMakeService.get_all_makes_for_select()
 fuel_types = FuelTypeService.list_all_fuel_types_for_select()
 
+@main_bp.route('/')
+def root_redirect():
+    return redirect(url_for('main.search'))
 
-@main_bp.route('/history')
-def get_history_data():
-    raw_args = request.args.to_dict()
-    clean_args = {k: v for k, v in raw_args.items() if v}
-    if raw_args and raw_args != clean_args:
-        return redirect(url_for('main.get_history_data', **clean_args))
-
-    fields = ("make", "model", "fuel_type", "year", "country", "sort")
-    selected = {f: request.args.get(f) for f in fields}
-
-    ids_param = request.args.get('ids', '')
-    try:
-        selected_ids = [int(i) for i in ids_param.split(',') if i]
-    except ValueError:
-        selected_ids = []
-
-    cars = OfferService.get_filtered_cars_list(**selected)
-
-    return render_template(
-        'data_table.html',
-        cars=cars,
-        makes=makes,
-        fuel_types=fuel_types,
-        years=get_years_list(),
-        selected=selected,
-        selected_ids=selected_ids,
-    )
-
-
-@main_bp.route("/", methods=['GET', 'POST'])
+@main_bp.route("/search", methods=['GET', 'POST'])
 def search():
     sources = SourceService.list_sources()
     newly_found_offers = []
@@ -99,6 +73,47 @@ def search():
         sources=sources,
         selected=selected_values_for_template,
         newly_found_offers=newly_found_offers,
+    )
+
+
+@main_bp.route('/history')
+def get_history_data():
+    raw_args = request.args.to_dict()
+    clean_args = {k: v for k, v in raw_args.items() if v}
+    if raw_args and raw_args != clean_args:
+        return redirect(url_for('main.get_history_data', **clean_args))
+
+    fields = (
+        "make", "model", "fuel_type", "year", "country", "sort",
+        "price_min", "price_max", "mileage_min", "mileage_max",
+        "body_type", "transmission", "drive", "source_id"
+    )
+    selected = {f: request.args.get(f) for f in fields}
+
+    ids_param = request.args.get('ids', '')
+    try:
+        selected_ids = [int(i) for i in ids_param.split(',') if i]
+    except ValueError:
+        selected_ids = []
+
+    cars = OfferService.get_filtered_cars_list(**selected)
+
+    sources = SourceService.list_sources()
+
+    return render_template(
+        'data_table.html',
+        cars=cars,
+        makes=makes,
+        fuel_types=fuel_types,
+        years=get_years_list(),
+        price_options=PRICE_OPTIONS,
+        mileage_options=MILEAGE_OPTIONS,
+        body_types=BODY_TYPES,
+        transmissions=TRANSMISSIONS,
+        drive_types=DRIVE_TYPES,
+        sources=sources,
+        selected=selected,
+        selected_ids=selected_ids,
     )
 
 @main_bp.route('/duty_calc', methods=['GET', 'POST'])

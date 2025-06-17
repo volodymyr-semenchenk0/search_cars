@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 from typing import Tuple, Dict, Any, Optional
+import asyncio
+import httpx
 
 import requests
 from bs4 import BeautifulSoup
@@ -20,7 +22,7 @@ class AutoScout24Parser:
                  fregfrom: Optional[int] = None, fregto: Optional[int] = None,
                  kmfrom: Optional[int] = None, kmto: Optional[int] = None,
                  cy: Optional[str] = None, fuel: Optional[str] = None,
-                 page_count: int = 2):
+                 page_count: int = 5):
         self.base_url = base_url
 
         self.make = make
@@ -79,89 +81,97 @@ class AutoScout24Parser:
 
         return params, path
 
-    def parse(self) -> list[ParsedCarOffer]:
-        all_parsed_cars_data_models = []
+    async def _fetch_and_parse_offer(self, detail_url: str, client: httpx.AsyncClient) -> Optional[ParsedCarOffer]:
+        try:
+            details_resp = await client.get(detail_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+            details_resp.raise_for_status()
+            detail_soup = BeautifulSoup(details_resp.text, "lxml")
+
+            short_data = detail_soup.find("script", type="application/ld+json")
+            detailed_data = detail_soup.find("script", id="__NEXT_DATA__", type="application/json")
+            if not detailed_data or not short_data:
+                logger.warning(f"Required JSON data not found on {detail_url}")
+                return None
+
+            ld_data = json.loads(short_data.string)
+            next_data = json.loads(detailed_data.string)
+            listing = next_data["props"]["pageProps"]["listingDetails"]
+            vehicle = listing.get("vehicle", {})
+
+            fuel_formatted = vehicle.get("fuelCategory", {}).get("formatted")
+            fuel_type_value = fuel_formatted.lower() if fuel_formatted else None
+
+            car_data_dict = {
+                "identifier": listing.get("id"),
+                "link_to_offer": detail_url,
+                "price": ld_data.get("offers", {}).get("price"),
+                "currency": ld_data.get("offers", {}).get("priceCurrency"),
+                "country_code": listing.get("location", {}).get("countryCode"),
+                "make": vehicle.get("make"), "model": vehicle.get("model"),
+                "year": self._parse_production_year(vehicle, ld_data),
+                "body_type": vehicle.get("bodyType"),
+                "fuel_type": fuel_type_value,
+                "engine_volume": vehicle.get("rawDisplacementInCCM"),
+                "battery_capacity_kwh": None, "transmission": vehicle.get("transmissionType"),
+                "drive": vehicle.get("driveTrain"), "mileage": vehicle.get("mileageInKmRaw"),
+            }
+
+            if not self._is_listing_valid(car_data_dict):
+                return None
+
+            if car_data_dict["fuel_type"] == "electric":
+                car_data_dict["battery_capacity_kwh"] = find_battery_capacity(
+                    car_data_dict["make"], car_data_dict["model"], car_data_dict["year"]
+                )
+
+            validated_offer = ParsedCarOffer(**car_data_dict)
+            logger.info(f"Successfully parsed and validated offer: {validated_offer.identifier}")
+            return validated_offer
+        except ValidationError as e:
+            logger.error(f"Validation error for offer at URL {detail_url}: {e.errors()}")
+        except httpx.RequestError as e:
+            logger.error(f"Failed to fetch offer details from {detail_url}: {e}")
+        except Exception as e:
+            logger.error(f"General error processing offer from {detail_url}: {e}", exc_info=True)
+        return None
+
+    async def _parse_async(self) -> list[ParsedCarOffer]:
+        all_parsed_cars = []
         params, path = self._configure_url()
-        page = 1
-        while page <= self.page_count:
-            params["page"] = str(page)
-            query = "&".join([f"{k}={v}" for k, v in params.items()])
-            url = self.base_url + path + "?" + query
-            logger.info(f"Parsing page {page}: {url}")
+        async with httpx.AsyncClient() as client:
+            for page in range(1, self.page_count + 1):
+                params["page"] = str(page)
+                query = "&".join([f"{k}={v}" for k, v in params.items()])
+                url = self.base_url + path + "?" + query
+                logger.info(f"Parsing page {page}: {url}")
 
-            try:
-                response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=2)
-                response.raise_for_status()
-            except requests.RequestException as e:
-                logger.error(f"Не вдалося отримати сторінку {url}: {e}")
-                continue
-
-            soup = BeautifulSoup(response.text, "html.parser")
-            car_elements = soup.find_all("article", class_="cldt-summary-full-item",
-                                         attrs={"data-source": "listpage_search-results"})
-            if not car_elements:
-                logger.error("No more listings or no results.")
-                break
-
-            for car in car_elements:
                 try:
-                    link_tag = car.select_one('a[href^="/offers"]')
-                    if not link_tag:
-                        continue
-                    detail_url = self.base_url + link_tag["href"]
-                    details_resp = requests.get(detail_url, headers={"User-Agent": "Mozilla/5.0"})
-                    detail_soup = BeautifulSoup(details_resp.text, "html.parser")
+                    response = await client.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=10)
+                    response.raise_for_status()
+                except httpx.RequestError as e:
+                    logger.error(f"Could not retrieve page {url}: {e}")
+                    continue
 
-                    short_data = detail_soup.find("script", type="application/ld+json")
-                    detailed_data = detail_soup.find("script", id="__NEXT_DATA__", type="application/json")
-                    if not detailed_data:
-                        logger.warning("JSON __NEXT_DATA__ не знайдено.")
-                        continue
+                soup = BeautifulSoup(response.text, "lxml")
+                car_elements = soup.find_all("article", class_="cldt-summary-full-item",
+                                             attrs={"data-source": "listpage_search-results"})
+                if not car_elements:
+                    logger.info("No more listings or no results on page %s.", page)
+                    break
 
-                    ld_data = json.loads(short_data.string)
-                    next_data = json.loads(detailed_data.string)
-                    listing = next_data["props"]["pageProps"]["listingDetails"]
-                    vehicle = listing.get("vehicle", {})
+                tasks = [
+                    self._fetch_and_parse_offer(self.base_url + link["href"], client)
+                    for car in car_elements
+                    if (link := car.select_one('a[href^="/offers"]'))
+                ]
 
-                    car_data_dict = {
-                        "identifier": listing.get("id"),
-                        "link_to_offer": detail_url,
-                        "price": ld_data.get("offers", {}).get("price"),
-                        "currency": ld_data.get("offers", {}).get("priceCurrency"),
-                        "country_code": listing.get("location", {}).get("countryCode"),
-                        "make": vehicle.get("make"),
-                        "model": vehicle.get("model"),
-                        "year": self._parse_production_year(vehicle, ld_data),
-                        "body_type": vehicle.get("bodyType"),
-                        "fuel_type": vehicle.get("fuelCategory", {}).get("formatted", "").lower() or None,
-                        "engine_volume": vehicle.get("rawDisplacementInCCM"),
-                        "battery_capacity_kwh": None,
-                        "transmission": vehicle.get("transmissionType"),
-                        "drive": vehicle.get("driveTrain"),
-                        "mileage": vehicle.get("mileageInKmRaw"),
-                    }
+                if tasks:
+                    results = await asyncio.gather(*tasks)
+                    all_parsed_cars.extend([res for res in results if res])
+        return all_parsed_cars
 
-                    if not self._is_listing_valid(car_data_dict):
-                        return []
-
-                    if car_data_dict["fuel_type"] == "electric":
-                        car_data_dict["battery_capacity_kwh"] = find_battery_capacity(
-                            car_data_dict["make"], car_data_dict["model"], car_data_dict["year"]
-                        )
-
-                    validated_offer = ParsedCarOffer(**car_data_dict)
-                    all_parsed_cars_data_models.append(validated_offer)
-                    logger.info(f"Успішно розпарсено та валідовано оголошення: {validated_offer.identifier}")
-
-
-                except ValidationError as e:
-                    logger.error(f"Помилка валідації даних для оголошення (URL: {detail_url}): {e.errors()}")
-                except Exception as e:
-                    logger.error(f"Загальна помилка при обробці авто: {e} (URL: {detail_url})")
-
-            page += 1
-
-        return all_parsed_cars_data_models
+    def parse(self) -> list[ParsedCarOffer]:
+        return asyncio.run(self._parse_async())
 
     @staticmethod
     def _parse_production_year(vehicle, ld_data):
@@ -209,4 +219,3 @@ class AutoScout24Parser:
                 return False
 
         return True
-
